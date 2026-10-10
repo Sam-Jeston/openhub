@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Git hosting you run yourself.</h1>
+  <p class="hero-lead">Openhub is a small, self-hosted home for your repositories. Push over SSH, browse code and history, and review changes with pull requests.</p>
+  <div class="hero-actions">
+    {% if can_register %}<a class="btn btn-primary btn-lg" href="/register">Create an account</a>{% endif %}
+    <a class="btn btn-lg" href="/login">Sign in</a>
+  </div>
+</section>
+<section class="section">
+  <div class="section-header">
+    <h2>Public repositories</h2>
+    <a href="/explore">View all {{ crate::web::fmt::icon("arrow-right")|safe }}</a>
+  </div>
+  {% if repos.is_empty() %}
+  <div class="blankslate">
+    {{ crate::web::fmt::icon("book-marked")|safe }}
+    <h3>No public repositories yet</h3>
+    <p>Repositories made public on this server will appear here.</p>
+  </div>
+  {% else %}
+  <div class="box">{% include "partials/repo_list.html" %}</div>
+  {% endif %}
+</section>
+{% endblock %}

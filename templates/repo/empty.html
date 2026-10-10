@@ -1,0 +1,34 @@
+{% extends "layout_repo.html" %}
+{% block content %}
+{% if !r.repo.description.is_empty() %}<p class="repo-description">{{ r.repo.description }}</p>{% endif %}
+<div class="box quick-setup">
+  <div class="box-header">
+    <h2>Quick setup</h2>
+    <span class="text-muted">This repository is empty. Push some code to get started.</span>
+  </div>
+  <div class="box-body">
+    <div class="input-group">
+      <span class="input-group-label">SSH</span>
+      <input class="input input-mono" type="text" readonly value="{{ r.ssh_url }}" id="empty-ssh" aria-label="SSH clone URL">
+      <button type="button" class="btn" data-copy="#empty-ssh" title="Copy">{{ crate::web::fmt::icon("copy")|safe }}</button>
+    </div>
+    {% if r.access.write %}
+    <h3>…or create a new repository on the command line</h3>
+    <pre class="command">echo "# {{ r.repo.name }}" &gt;&gt; README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M {{ r.repo.default_branch }}
+git remote add origin {{ r.ssh_url }}
+git push -u origin {{ r.repo.default_branch }}</pre>
+    <h3>…or push an existing repository from the command line</h3>
+    <pre class="command">git remote add origin {{ r.ssh_url }}
+git branch -M {{ r.repo.default_branch }}
+git push -u origin {{ r.repo.default_branch }}</pre>
+    <p class="text-muted text-small">Pushing requires an SSH key on your account. <a href="/settings/keys">Manage SSH keys</a>.</p>
+    {% else %}
+    <p class="text-muted">Nothing has been pushed to this repository yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

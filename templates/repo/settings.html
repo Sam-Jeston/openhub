@@ -1,0 +1,91 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}Settings · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+<div class="narrow-wide">
+  <section class="settings-section">
+    <h2 class="settings-title">General</h2>
+    {% if let Some(e) = error %}<div class="flash flash-error">{{ crate::web::fmt::icon("circle-alert")|safe }}<span>{{ e }}</span></div>{% endif %}
+    <form method="post" action="{{ base }}/settings" class="form">
+      <label class="field">
+        <span class="field-label">Repository name</span>
+        <input class="input" type="text" name="name" value="{{ r.repo.name }}" maxlength="100" required>
+        <span class="field-hint">Renaming changes the URL. Update your remotes with <code>git remote set-url origin &lt;new url&gt;</code>.</span>
+      </label>
+      <label class="field">
+        <span class="field-label">Description</span>
+        <input class="input" type="text" name="description" value="{{ r.repo.description }}" maxlength="350">
+      </label>
+      <label class="field">
+        <span class="field-label">Default branch</span>
+        {% if branches.is_empty() %}
+        <input class="input" type="text" value="{{ r.repo.default_branch }}" disabled>
+        <span class="field-hint">Push a branch to choose a different default.</span>
+        {% else %}
+        <select class="input" name="default_branch">
+          {% for b in branches %}<option value="{{ b }}"{% if *b == r.repo.default_branch %} selected{% endif %}>{{ b }}</option>{% endfor %}
+        </select>
+        <span class="field-hint">The branch shown on the repository page and used as the default base for pull requests.</span>
+        {% endif %}
+      </label>
+      <fieldset class="field radio-cards">
+        <legend class="field-label">Visibility</legend>
+        <label class="radio-card">
+          <input type="radio" name="visibility" value="public"{% if !r.repo.is_private %} checked{% endif %}>
+          {{ crate::web::fmt::icon("book-marked")|safe }}
+          <span><strong>Public</strong><span class="text-muted">Anyone who can reach this server can see and clone it.</span></span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="visibility" value="private"{% if r.repo.is_private %} checked{% endif %}>
+          {{ crate::web::fmt::icon("lock")|safe }}
+          <span><strong>Private</strong><span class="text-muted">Only you and collaborators can see it.</span></span>
+        </label>
+      </fieldset>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save changes</button></div>
+    </form>
+  </section>
+
+  <section class="settings-section">
+    <h2 class="settings-title">Collaborators</h2>
+    <p class="text-muted">Collaborators can push branches, merge pull requests and see this repository if it is private.</p>
+    {% if let Some(e) = collab_error %}<div class="flash flash-error">{{ crate::web::fmt::icon("circle-alert")|safe }}<span>{{ e }}</span></div>{% endif %}
+    <div class="box">
+      <div class="box-row collaborator-row">
+        {{ crate::web::fmt::avatar(r.repo.owner, 24)|safe }}
+        <a href="/{{ r.repo.owner }}"><strong>{{ r.repo.owner }}</strong></a>
+        <span class="label">Owner</span>
+      </div>
+      {% for c in collaborators %}
+      <div class="box-row collaborator-row">
+        {{ crate::web::fmt::avatar(c.username, 24)|safe }}
+        <a href="/{{ c.username }}"><strong>{{ c.username }}</strong></a>
+        <span class="label">Write</span>
+        <form method="post" action="{{ base }}/settings/collaborators/remove" class="push-right" data-confirm="Remove {{ c.username }} as a collaborator?">
+          <input type="hidden" name="username" value="{{ c.username }}">
+          <button class="btn btn-sm btn-danger" type="submit">Remove</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    <form method="post" action="{{ base }}/settings/collaborators" class="inline-form">
+      <input class="input" type="text" name="username" placeholder="Username" required autocapitalize="off" aria-label="Username">
+      <button class="btn" type="submit">{{ crate::web::fmt::icon("users")|safe }} Add collaborator</button>
+    </form>
+  </section>
+
+  <section class="settings-section">
+    <h2 class="settings-title text-danger">Danger zone</h2>
+    <div class="box danger-zone">
+      <div class="box-body">
+        <h3>Delete this repository</h3>
+        <p class="text-muted">This permanently deletes the repository, its history and all pull requests. It cannot be undone.</p>
+        <form method="post" action="{{ base }}/settings/delete" class="inline-form">
+          <input class="input" type="text" name="confirm" placeholder="{{ r.repo.owner }}/{{ r.repo.name }}" required autocomplete="off" aria-label="Type the repository name to confirm">
+          <button class="btn btn-danger" type="submit">Delete repository</button>
+        </form>
+        <p class="field-hint">Type <strong>{{ r.repo.owner }}/{{ r.repo.name }}</strong> to confirm.</p>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

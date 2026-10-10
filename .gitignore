@@ -1,0 +1,18 @@
+# Build output
+/target
+
+# Default runtime data directory (database, repositories, SSH host key)
+/data
+
+# Runtime data if --data-dir points elsewhere inside the checkout
+*.db
+*.db-shm
+*.db-wal
+ssh_host_*_key
+*.git/
+
+# Local deployment settings (read automatically by docker compose)
+.env
+
+# OS files
+.DS_Store

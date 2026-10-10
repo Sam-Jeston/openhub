@@ -1,0 +1,88 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}{% if !view.path.is_empty() %}{{ view.path }} at {{ view.refname }} · {% endif %}{% endblock %}
+{% block content %}
+{% let base = r.base() %}
+{% if let Some((branch, pushed)) = view.recent_branch %}
+<div class="banner">
+  <span>{{ crate::web::fmt::icon("git-branch")|safe }} <strong>{{ branch }}</strong> had recent pushes <time>{{ crate::web::fmt::ago(pushed) }}</time></span>
+  <a class="btn btn-sm btn-success" href="{{ base }}/compare/{{ crate::web::fmt::urlpath(r.repo.default_branch) }}...{{ crate::web::fmt::urlpath(branch) }}">Compare &amp; pull request</a>
+</div>
+{% endif %}
+<div class="{% if is_root %}layout-repo{% else %}layout-full{% endif %}">
+  <div class="repo-main">
+    <div class="code-toolbar">
+      {% let refsel = view.refsel %}
+      {% include "partials/refsel.html" %}
+      {% if is_root %}
+      <a class="toolbar-link" href="{{ base }}/branches">{{ crate::web::fmt::icon("git-branch")|safe }} <strong>{{ view.branch_count }}</strong> {% if view.branch_count == 1 %}branch{% else %}branches{% endif %}</a>
+      <a class="toolbar-link" href="{{ base }}/tags">{{ crate::web::fmt::icon("tag")|safe }} <strong>{{ view.tag_count }}</strong> {% if view.tag_count == 1 %}tag{% else %}tags{% endif %}</a>
+      {% else %}
+      <nav class="breadcrumbs" aria-label="Path">
+        <a href="{{ base }}/tree/{{ crate::web::fmt::urlpath(view.refname) }}"><strong>{{ r.repo.name }}</strong></a>
+        {% for c in view.crumbs %}<span class="crumb-sep">/</span>{% if loop.last %}<strong>{{ c.name }}</strong>{% else %}<a href="{{ c.href }}">{{ c.name }}</a>{% endif %}{% endfor %}
+      </nav>
+      {% endif %}
+      <span class="toolbar-spacer"></span>
+      {% if is_root %}{% include "partials/clone.html" %}{% endif %}
+    </div>
+    <div class="box file-browser">
+      {% if let Some(c) = view.latest %}
+      <div class="box-header latest-commit">
+        {{ crate::web::fmt::avatar(c.author_name, 22)|safe }}
+        <strong class="latest-author">{{ c.author_name }}</strong>
+        <a class="latest-message truncate" href="{{ base }}/commit/{{ c.id }}" title="{{ c.summary }}">{{ c.summary }}</a>
+        <span class="latest-meta">
+          <a class="text-mono text-muted" href="{{ base }}/commit/{{ c.id }}">{{ c.short_id }}</a>
+          <span class="dot">·</span>
+          <time title="{{ crate::web::fmt::datetime_full(c.committer_time) }}">{{ crate::web::fmt::ago(c.committer_time) }}</time>
+        </span>
+        <a class="history-link" href="{{ view.history_href }}">{{ crate::web::fmt::icon("history")|safe }}{% if is_root %} <strong>{{ view.commit_count }}</strong> {% if view.commit_count == 1 %}commit{% else %}commits{% endif %}{% else %} History{% endif %}</a>
+      </div>
+      {% endif %}
+      <table class="files">
+        <tbody>
+          {% if let Some(up) = view.parent_href %}
+          <tr><td class="file-icon"></td><td class="file-name" colspan="3"><a href="{{ up }}" title="Up one level">..</a></td></tr>
+          {% endif %}
+          {% for row in view.entries %}
+          <tr>
+            <td class="file-icon{% if row.entry.is_dir() %} is-dir{% endif %}">{% if row.entry.is_dir() %}{{ crate::web::fmt::icon("folder")|safe }}{% else if row.entry.is_submodule() %}{{ crate::web::fmt::icon("folder")|safe }}{% else %}{{ crate::web::fmt::icon("file")|safe }}{% endif %}</td>
+            <td class="file-name">{% if row.entry.is_submodule() %}<span title="Submodule">{{ row.entry.name }}</span>{% else %}<a href="{{ row.href }}">{{ row.entry.name }}</a>{% endif %}</td>
+            <td class="file-message">{% if let Some(c) = row.entry.last_commit %}<a href="{{ base }}/commit/{{ c.id }}" title="{{ c.summary }}">{{ c.summary }}</a>{% endif %}</td>
+            <td class="file-age">{% if let Some(c) = row.entry.last_commit %}<time title="{{ crate::web::fmt::datetime_full(c.committer_time) }}">{{ crate::web::fmt::ago(c.committer_time) }}</time>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if let Some(readme) = view.readme %}
+    <div class="box readme" id="readme">
+      <div class="box-header readme-header">{{ crate::web::fmt::icon("book-marked")|safe }} <strong>{{ readme.name }}</strong></div>
+      {% if readme.is_markdown %}
+      <article class="markdown-body">{{ readme.html|safe }}</article>
+      {% else %}
+      <pre class="readme-plain">{{ readme.html|safe }}</pre>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% if is_root %}
+  <aside class="repo-sidebar">
+    <h2>About</h2>
+    {% if r.repo.description.is_empty() %}
+    <p class="text-muted"><em>No description provided.</em></p>
+    {% else %}
+    <p class="about-description">{{ r.repo.description }}</p>
+    {% endif %}
+    <ul class="about-list">
+      {% if view.readme.is_some() %}<li><a href="#readme">{{ crate::web::fmt::icon("book-marked")|safe }} Readme</a></li>{% endif %}
+      <li><a href="{{ base }}/commits">{{ crate::web::fmt::icon("history")|safe }} {{ crate::web::fmt::plural(view.commit_count, "commit") }}</a></li>
+      <li><a href="{{ base }}/branches">{{ crate::web::fmt::icon("git-branch")|safe }} {{ crate::web::fmt::plural(view.branch_count, "branch") }}</a></li>
+      <li><a href="{{ base }}/tags">{{ crate::web::fmt::icon("tag")|safe }} {{ crate::web::fmt::plural(view.tag_count, "tag") }}</a></li>
+      <li><a href="{{ base }}/pulls">{{ crate::web::fmt::icon("git-pull-request")|safe }} {{ r.open_pulls }} open pull {% if r.open_pulls == 1 %}request{% else %}requests{% endif %}</a></li>
+    </ul>
+    {% if r.access.admin %}<a class="text-small" href="{{ base }}/settings">{{ crate::web::fmt::icon("settings")|safe }} Edit repository details</a>{% endif %}
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

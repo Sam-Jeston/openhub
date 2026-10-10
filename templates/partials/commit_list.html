@@ -1,0 +1,28 @@
+{# Expects `groups` (Vec<CommitGroup>) and `base`. #}
+<div class="commit-groups">
+  {% for g in groups %}
+  <div class="commit-group">
+    <h3 class="commit-group-title">{{ crate::web::fmt::icon("git-commit-horizontal")|safe }} Commits on {{ g.date }}</h3>
+    <div class="box">
+      {% for c in g.commits %}
+      <div class="box-row commit-row">
+        <div class="commit-main">
+          <a class="commit-title" href="{{ base }}/commit/{{ c.id }}">{{ c.summary }}</a>
+          <div class="commit-meta">
+            {{ crate::web::fmt::avatar(c.author_name, 18)|safe }}
+            <strong>{{ c.author_name }}</strong> committed <time title="{{ crate::web::fmt::datetime_full(c.committer_time) }}">{{ crate::web::fmt::ago(c.committer_time) }}</time>
+          </div>
+        </div>
+        <div class="commit-actions">
+          <div class="btn-group">
+            <a class="btn btn-sm btn-mono" href="{{ base }}/commit/{{ c.id }}">{{ c.short_id }}</a>
+            <button type="button" class="btn btn-sm" data-copy-text="{{ c.id }}" title="Copy full SHA">{{ crate::web::fmt::icon("copy")|safe }}</button>
+          </div>
+          <a class="btn btn-sm btn-ghost" href="{{ base }}/tree/{{ c.id }}" title="Browse the repository at this point">{{ crate::web::fmt::icon("code")|safe }}</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>

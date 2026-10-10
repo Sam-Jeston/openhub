@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Openhub{% endblock %}
+{% block content %}
+<div class="layout-dashboard">
+  <aside class="dashboard-sidebar">
+    <div class="sidebar-header">
+      <h2>Your repositories</h2>
+      <a class="btn btn-sm btn-primary" href="/new">{{ crate::web::fmt::icon("plus")|safe }} New</a>
+    </div>
+    {% if repos.is_empty() %}
+    <p class="text-muted text-small">You don't have any repositories yet.</p>
+    {% else %}
+    <ul class="sidebar-repos">
+      {% for repo in repos %}
+      <li>
+        <a href="/{{ repo.owner }}/{{ repo.name }}">
+          {% if repo.is_private %}{{ crate::web::fmt::icon("lock")|safe }}{% else %}{{ crate::web::fmt::icon("book-marked")|safe }}{% endif %}
+          <span class="truncate">{{ repo.owner }}/<strong>{{ repo.name }}</strong></span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </aside>
+  <div class="dashboard-main">
+    {% if repos.is_empty() %}
+    <div class="box welcome-box">
+      <div class="box-body">
+        <h2>Welcome to Openhub{% if let Some(u) = ctx.user %}, {{ u.name() }}{% endif %}</h2>
+        <p class="text-muted">Get set up in two steps.</p>
+        <ol class="steps">
+          <li><a href="/settings/keys">Add an SSH key</a> so you can push from the command line.</li>
+          <li><a href="/new">Create a repository</a> and push your code to it.</li>
+        </ol>
+      </div>
+    </div>
+    {% endif %}
+    <section class="section">
+      <div class="section-header"><h2>Open pull requests</h2></div>
+      {% if pulls.is_empty() %}
+      <div class="blankslate blankslate-sm box">
+        {{ crate::web::fmt::icon("git-pull-request")|safe }}
+        <p>No open pull requests in your repositories.</p>
+      </div>
+      {% else %}
+      <div class="box">
+        {% for (pr, owner, name) in pulls %}
+        <div class="box-row issue-row">
+          <span class="issue-icon state-color-open">{{ crate::web::fmt::icon("git-pull-request")|safe }}</span>
+          <div class="issue-main">
+            <a class="text-muted" href="/{{ owner }}/{{ name }}">{{ owner }}/{{ name }}</a>
+            <a class="issue-title" href="/{{ owner }}/{{ name }}/pull/{{ pr.number }}">{{ pr.title }}</a>
+            <div class="issue-meta">#{{ pr.number }} opened <time title="{{ crate::web::fmt::datetime_full(pr.created_at) }}">{{ crate::web::fmt::ago(pr.created_at) }}</time> by {{ pr.author }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </section>
+    {% if !recent.is_empty() %}
+    <section class="section">
+      <div class="section-header">
+        <h2>Recently updated on this server</h2>
+        <a href="/explore">Explore {{ crate::web::fmt::icon("arrow-right")|safe }}</a>
+      </div>
+      {% let repos = recent %}
+      <div class="box">{% include "partials/repo_list.html" %}</div>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

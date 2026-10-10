@@ -1,0 +1,63 @@
+{% extends "layout_settings.html" %}
+{% block title %}SSH keys · Openhub{% endblock %}
+{% block settings %}
+<section class="settings-section">
+  <h2 class="settings-title">SSH keys</h2>
+  <p class="text-muted">These keys can push to and pull from every repository you have access to. Remove any key you no longer recognise.</p>
+  {% if keys.is_empty() %}
+  <div class="blankslate blankslate-sm box">
+    {{ crate::web::fmt::icon("key-round")|safe }}
+    <h3>No SSH keys yet</h3>
+    <p>Add a key below to start pushing over SSH.</p>
+  </div>
+  {% else %}
+  <div class="box">
+    {% for k in keys %}
+    <div class="box-row key-row">
+      <div class="key-icon">{{ crate::web::fmt::icon("key-round")|safe }}<span class="label">SSH</span></div>
+      <div class="key-main">
+        <strong>{{ k.title }}</strong>
+        <code class="key-fingerprint">{{ k.fingerprint }}</code>
+        <div class="text-muted text-small">
+          {{ k.key_type }} · Added {{ crate::web::fmt::date(k.created_at) }} ·
+          {% if let Some(used) = k.last_used_at %}Last used <time title="{{ crate::web::fmt::datetime_full(used) }}">{{ crate::web::fmt::ago(used) }}</time>{% else %}Never used{% endif %}
+        </div>
+      </div>
+      <form method="post" action="/settings/keys/{{ k.id }}/delete" data-confirm="Delete the SSH key “{{ k.title }}”? Anything using it will no longer be able to access your repositories.">
+        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+<section class="settings-section">
+  <h2 class="settings-title">Add a new SSH key</h2>
+  {% if let Some(e) = error %}<div class="flash flash-error">{{ crate::web::fmt::icon("circle-alert")|safe }}<span>{{ e }}</span></div>{% endif %}
+  <form method="post" action="/settings/keys" class="form">
+    <label class="field">
+      <span class="field-label">Title</span>
+      <input class="input" type="text" name="title" value="{{ title }}" maxlength="100" placeholder="e.g. Work laptop">
+      <span class="field-hint">Defaults to the key's comment.</span>
+    </label>
+    <label class="field">
+      <span class="field-label">Key</span>
+      <textarea class="input input-mono" name="key" rows="5" required placeholder="Begins with 'ssh-ed25519', 'ssh-rsa', 'ecdsa-sha2-nistp256', ...">{{ key }}</textarea>
+    </label>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Add SSH key</button></div>
+  </form>
+</section>
+<section class="settings-section">
+  <h2 class="settings-title">Getting started</h2>
+  <div class="box box-body help-box">
+    <p>Generate a key if you don't have one, then paste the contents of the <code>.pub</code> file above:</p>
+    <pre class="command">ssh-keygen -t ed25519 -C "you@example.com"
+cat ~/.ssh/id_ed25519.pub</pre>
+    <p>Once added, check that the server accepts it:</p>
+    <div class="input-group">
+      <input class="input input-mono" type="text" readonly value="{{ test_command }}" id="ssh-test" aria-label="SSH test command">
+      <button type="button" class="btn" data-copy="#ssh-test" title="Copy">{{ crate::web::fmt::icon("copy")|safe }}</button>
+    </div>
+  </div>
+</section>
+{% endblock %}

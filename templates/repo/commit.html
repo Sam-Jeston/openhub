@@ -1,0 +1,35 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}{{ commit.summary }} · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+<div class="box commit-header">
+  <div class="box-body">
+    <div class="commit-header-top">
+      <h1 class="commit-summary">{{ commit.summary }}</h1>
+      <a class="btn btn-sm" href="{{ base }}/tree/{{ commit.id }}">{{ crate::web::fmt::icon("code")|safe }} Browse files</a>
+    </div>
+    {% if !commit.body.is_empty() %}<pre class="commit-body">{{ commit.body }}</pre>{% endif %}
+  </div>
+  <div class="box-footer commit-footer">
+    <div class="commit-author">
+      {{ crate::web::fmt::avatar(commit.author_name, 20)|safe }}
+      <strong title="{{ commit.author_email }}">{{ commit.author_name }}</strong>
+      {% if commit.committer_name != commit.author_name %}authored <time title="{{ crate::web::fmt::datetime_full(commit.author_time) }}">{{ crate::web::fmt::ago(commit.author_time) }}</time> and <strong>{{ commit.committer_name }}</strong> committed{% else %}committed{% endif %}
+      <time title="{{ crate::web::fmt::datetime_full(commit.committer_time) }}">{{ crate::web::fmt::ago(commit.committer_time) }}</time>
+    </div>
+    <div class="commit-ids">
+      {% let parents = commit.short_parents() %}
+      {% if !parents.is_empty() %}
+      <span>{% if parents.len() == 1 %}1 parent{% else %}{{ parents.len() }} parents{% endif %}
+        {% for (full, short) in parents %}<a class="text-mono" href="{{ base }}/commit/{{ full }}">{{ short }}</a>{% if !loop.last %} + {% endif %}{% endfor %}
+      </span>
+      {% endif %}
+      <span>commit <span class="text-mono">{{ commit.id }}</span>
+        <button type="button" class="btn btn-sm btn-ghost btn-icon" data-copy-text="{{ commit.id }}" title="Copy full SHA">{{ crate::web::fmt::icon("copy")|safe }}</button>
+      </span>
+    </div>
+  </div>
+</div>
+{% let file_ref = commit.id.clone() %}
+{% include "partials/diff.html" %}
+{% endblock %}

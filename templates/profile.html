@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.username }} · Openhub{% endblock %}
+{% block content %}
+<div class="layout-profile">
+  <aside class="profile-card">
+    {{ crate::web::fmt::avatar(profile.username, 200)|safe }}
+    <h1 class="profile-name">{{ profile.name() }}</h1>
+    {% if profile.name() != profile.username %}<div class="profile-login">{{ profile.username }}</div>{% endif %}
+    {% if !profile.bio.is_empty() %}<p class="profile-bio">{{ profile.bio }}</p>{% endif %}
+    {% if is_self %}<a class="btn btn-block" href="/settings/profile">Edit profile</a>{% endif %}
+    <div class="profile-meta">{{ crate::web::fmt::icon("clock")|safe }} Joined {{ crate::web::fmt::date(profile.created_at) }}</div>
+  </aside>
+  <div class="profile-main">
+    <div class="section-header">
+      <h2>Repositories <span class="counter">{{ repos.len() }}</span></h2>
+      {% if is_self %}<a class="btn btn-sm btn-primary" href="/new">{{ crate::web::fmt::icon("plus")|safe }} New</a>{% endif %}
+    </div>
+    {% if repos.is_empty() %}
+    <div class="blankslate">
+      {{ crate::web::fmt::icon("book-marked")|safe }}
+      <h3>{% if is_self %}You don't have any repositories yet{% else %}{{ profile.username }} doesn't have any public repositories yet{% endif %}</h3>
+    </div>
+    {% else %}
+    <div class="box">{% include "partials/repo_list.html" %}</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

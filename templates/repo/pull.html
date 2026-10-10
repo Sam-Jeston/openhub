@@ -1,0 +1,256 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}{{ pr.title }} · Pull request #{{ pr.number }} · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+{% let purl = r.pull_url(pr.number) %}
+<div class="pull-header">
+  <div class="pull-title-row">
+    <h1 class="pull-title">{{ pr.title }} <span class="text-muted">#{{ pr.number }}</span></h1>
+    {% if can_close %}<button type="button" class="btn btn-sm" data-toggle="edit-pull">Edit</button>{% endif %}
+  </div>
+  {% if can_close %}
+  <form id="edit-pull" class="box box-body form edit-pull" method="post" action="{{ purl }}/edit" hidden>
+    <label class="field"><span class="field-label">Title</span><input class="input" type="text" name="title" value="{{ pr.title }}" maxlength="256" required></label>
+    <label class="field"><span class="field-label">Description</span><textarea class="input" name="body" rows="6">{{ pr.body }}</textarea></label>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <button class="btn" type="button" data-toggle="edit-pull">Cancel</button>
+    </div>
+  </form>
+  {% endif %}
+  <div class="pull-meta">
+    {% if pr.state == "merged" %}
+    <span class="state state-merged">{{ crate::web::fmt::icon("git-merge")|safe }} Merged</span>
+    <span><strong>{{ pr.merged_by.clone().unwrap_or(pr.author.clone()) }}</strong> merged {{ crate::web::fmt::plural(data.commits.len(), "commit") }} into <span class="branch-label">{{ pr.base_branch }}</span> from <span class="branch-label">{{ pr.head_branch }}</span>{% if let Some(t) = pr.merged_at %} <time title="{{ crate::web::fmt::datetime_full(t) }}">{{ crate::web::fmt::ago(t) }}</time>{% endif %}</span>
+    {% else if pr.state == "closed" %}
+    <span class="state state-closed">{{ crate::web::fmt::icon("git-pull-request-closed")|safe }} Closed</span>
+    <span><strong>{{ pr.author }}</strong> wanted to merge {{ crate::web::fmt::plural(data.commits.len(), "commit") }} into <span class="branch-label">{{ pr.base_branch }}</span> from <span class="branch-label">{{ pr.head_branch }}</span></span>
+    {% else %}
+    <span class="state state-open">{{ crate::web::fmt::icon("git-pull-request")|safe }} Open</span>
+    <span><strong>{{ pr.author }}</strong> wants to merge {{ crate::web::fmt::plural(data.commits.len(), "commit") }} into <span class="branch-label">{{ pr.base_branch }}</span> from <span class="branch-label">{{ pr.head_branch }}</span></span>
+    {% endif %}
+  </div>
+</div>
+
+<nav class="tabs tabs-sub" aria-label="Pull request">
+  <a class="tab{% if pull_tab == "conversation" %} selected{% endif %}" href="{{ purl }}">{{ crate::web::fmt::icon("message-square")|safe }} Conversation <span class="counter">{{ pr.comments }}</span></a>
+  <a class="tab{% if pull_tab == "commits" %} selected{% endif %}" href="{{ purl }}/commits">{{ crate::web::fmt::icon("git-commit-horizontal")|safe }} Commits <span class="counter">{{ data.commits.len() }}</span></a>
+  <a class="tab{% if pull_tab == "files" %} selected{% endif %}" href="{{ purl }}/files">{{ crate::web::fmt::icon("file-text")|safe }} Files changed <span class="counter">{{ data.files }}</span></a>
+  <span class="tabs-extra"><span class="text-success">+{{ data.additions }}</span> <span class="text-danger">−{{ data.deletions }}</span></span>
+</nav>
+
+{% if pull_tab == "conversation" %}
+<div class="layout-pull">
+  <div class="timeline">
+    <div class="timeline-comment">
+      <div class="timeline-avatar">{{ crate::web::fmt::avatar(pr.author, 40)|safe }}</div>
+      <div class="comment">
+        <div class="comment-header">
+          <strong>{{ pr.author }}</strong> <span class="text-muted">opened this <time title="{{ crate::web::fmt::datetime_full(pr.created_at) }}">{{ crate::web::fmt::ago(pr.created_at) }}</time></span>
+          <span class="label comment-role">Author</span>
+        </div>
+        <div class="comment-body markdown-body">
+          {% if pr.body.is_empty() %}<p class="text-muted"><em>No description provided.</em></p>{% else %}{{ body_html|safe }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% for item in timeline %}
+    {% let e = item.event %}
+    {% if e.kind == "comment" %}
+    <div class="timeline-comment" id="event-{{ e.id }}">
+      <div class="timeline-avatar">{{ crate::web::fmt::avatar(e.author, 40)|safe }}</div>
+      <div class="comment">
+        <div class="comment-header">
+          <strong>{{ e.author }}</strong> <span class="text-muted">commented <a class="text-muted" href="#event-{{ e.id }}"><time title="{{ crate::web::fmt::datetime_full(e.created_at) }}">{{ crate::web::fmt::ago(e.created_at) }}</time></a></span>
+          {% if e.author == pr.author %}<span class="label comment-role">Author</span>{% endif %}
+        </div>
+        <div class="comment-body markdown-body">{{ item.html|safe }}</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="timeline-event">
+      {% if e.kind == "merged" %}
+      <span class="event-badge badge-merged">{{ crate::web::fmt::icon("git-merge")|safe }}</span>
+      <span>{% if e.author.is_empty() %}This pull request was <strong>merged</strong>{% else %}<strong>{{ e.author }}</strong> merged{% endif %}
+        {% if let Some(sha) = pr.merge_commit_sha %}commit <a class="text-mono" href="{{ base }}/commit/{{ sha }}">{{ crate::web::fmt::short_sha(sha) }}</a>{% endif %}
+        into <span class="branch-label">{{ pr.base_branch }}</span>
+      {% else if e.kind == "closed" %}
+      <span class="event-badge badge-closed">{{ crate::web::fmt::icon("git-pull-request-closed")|safe }}</span>
+      <span><strong>{{ e.author }}</strong> closed this
+      {% else if e.kind == "reopened" %}
+      <span class="event-badge badge-open">{{ crate::web::fmt::icon("git-pull-request")|safe }}</span>
+      <span><strong>{{ e.author }}</strong> reopened this
+      {% else if e.kind == "branch_deleted" %}
+      <span class="event-badge">{{ crate::web::fmt::icon("git-branch")|safe }}</span>
+      <span><strong>{{ e.author }}</strong> deleted the <span class="branch-label">{{ e.body }}</span> branch
+      {% else %}
+      <span class="event-badge">{{ crate::web::fmt::icon("clock")|safe }}</span>
+      <span>{{ e.kind }}
+      {% endif %}
+        <time class="text-muted" title="{{ crate::web::fmt::datetime_full(e.created_at) }}">{{ crate::web::fmt::ago(e.created_at) }}</time></span>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    {% if pr.state == "open" %}
+    <div class="timeline-comment merge-section">
+      <div class="timeline-avatar merge-avatar state-{% if data.mergeability == Some(crate::git::Mergeability::Clean) %}open{% else %}neutral{% endif %}">{{ crate::web::fmt::icon("git-merge")|safe }}</div>
+      <div class="merge-box{% if data.mergeability == Some(crate::git::Mergeability::Clean) %} merge-box-ready{% endif %}">
+        {% if !data.head_exists %}
+        <div class="merge-status">
+          <span class="merge-status-icon status-neutral">{{ crate::web::fmt::icon("git-branch")|safe }}</span>
+          <div><strong>The head branch {{ pr.head_branch }} no longer exists.</strong><div class="text-muted">Push the branch again or close this pull request.</div></div>
+        </div>
+        {% else if !data.base_exists %}
+        <div class="merge-status">
+          <span class="merge-status-icon status-neutral">{{ crate::web::fmt::icon("git-branch")|safe }}</span>
+          <div><strong>The base branch {{ pr.base_branch }} no longer exists.</strong></div>
+        </div>
+        {% else if data.mergeability == Some(crate::git::Mergeability::Conflicts) %}
+        <div class="merge-status">
+          <span class="merge-status-icon status-danger">{{ crate::web::fmt::icon("x")|safe }}</span>
+          <div><strong>This branch has conflicts that must be resolved</strong><div class="text-muted">Resolve them locally and push the result:</div></div>
+        </div>
+        <pre class="command merge-instructions">git fetch origin
+git checkout {{ pr.head_branch }}
+git merge origin/{{ pr.base_branch }}
+# fix conflicts, then
+git commit
+git push origin {{ pr.head_branch }}</pre>
+        {% else %}
+        <div class="merge-status">
+          <span class="merge-status-icon status-success">{{ crate::web::fmt::icon("check")|safe }}</span>
+          <div><strong>This branch has no conflicts with the base branch</strong><div class="text-muted">Merging can be performed automatically.</div></div>
+        </div>
+        {% if r.access.write %}
+        <form class="merge-form" method="post" action="{{ purl }}/merge">
+          <select class="input input-sm" name="method" aria-label="Merge method">
+            <option value="merge">Create a merge commit</option>
+            <option value="squash">Squash and merge</option>
+            <option value="rebase">Rebase and merge</option>
+          </select>
+          <button class="btn btn-success" type="submit">{{ crate::web::fmt::icon("git-merge")|safe }} Merge pull request</button>
+        </form>
+        {% else %}
+        <p class="merge-note text-muted">Only people with write access to this repository can merge pull requests.</p>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% else if pr.state == "merged" %}
+    <div class="timeline-comment merge-section">
+      <div class="timeline-avatar merge-avatar state-merged">{{ crate::web::fmt::icon("git-merge")|safe }}</div>
+      <div class="merge-box merge-box-merged">
+        <div class="merge-status">
+          <div><strong>Pull request successfully merged and closed</strong><div class="text-muted">{% if can_delete_branch %}The <span class="branch-label">{{ pr.head_branch }}</span> branch can be safely deleted.{% else %}You're all set.{% endif %}</div></div>
+          {% if can_delete_branch %}
+          <form method="post" action="{{ base }}/branches/delete">
+            <input type="hidden" name="branch" value="{{ pr.head_branch }}">
+            <input type="hidden" name="return_to" value="{{ purl }}">
+            <input type="hidden" name="pr" value="{{ pr.number }}">
+            <button class="btn btn-sm" type="submit">Delete branch</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="timeline-comment merge-section">
+      <div class="timeline-avatar merge-avatar state-closed">{{ crate::web::fmt::icon("git-pull-request-closed")|safe }}</div>
+      <div class="merge-box">
+        <div class="merge-status">
+          <div><strong>Closed with unmerged commits</strong><div class="text-muted">This pull request is closed, but the <span class="branch-label">{{ pr.head_branch }}</span> branch has unmerged commits.</div></div>
+          {% if can_delete_branch %}
+          <form method="post" action="{{ base }}/branches/delete" data-confirm="Delete the branch “{{ pr.head_branch }}”? Its commits are not merged.">
+            <input type="hidden" name="branch" value="{{ pr.head_branch }}">
+            <input type="hidden" name="return_to" value="{{ purl }}">
+            <input type="hidden" name="pr" value="{{ pr.number }}">
+            <button class="btn btn-sm btn-danger" type="submit">Delete branch</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if let Some(u) = ctx.user %}
+    <div class="timeline-comment comment-form-row">
+      <div class="timeline-avatar">{{ crate::web::fmt::avatar(u.username, 40)|safe }}</div>
+      <form class="comment comment-form" method="post" action="{{ purl }}/comment">
+        <div class="comment-header"><strong>Add a comment</strong></div>
+        <div class="comment-form-body">
+          <textarea class="input" name="body" rows="5" placeholder="Leave a comment. Markdown is supported."></textarea>
+          <div class="form-actions form-actions-end">
+            {% if pr.state == "open" && can_close %}
+            <button class="btn" type="submit" name="close" value="1">{{ crate::web::fmt::icon("git-pull-request-closed")|safe }} Close pull request</button>
+            {% endif %}
+            <button class="btn btn-primary" type="submit">Comment</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    {% if pr.state == "closed" && can_close %}
+    <form class="reopen-form" method="post" action="{{ purl }}/state">
+      <input type="hidden" name="action" value="reopen">
+      <button class="btn" type="submit">Reopen pull request</button>
+    </form>
+    {% endif %}
+    {% else %}
+    <div class="banner"><span><a href="/login?next={{ crate::web::fmt::urlencode(ctx.path) }}">Sign in</a> to join the conversation.</span></div>
+    {% endif %}
+  </div>
+
+  <aside class="pull-sidebar">
+    <div class="sidebar-item">
+      <h3>Branches</h3>
+      <p><span class="branch-label">{{ pr.base_branch }}</span> ← <span class="branch-label">{{ pr.head_branch }}</span></p>
+    </div>
+    <div class="sidebar-item">
+      <h3>Changes</h3>
+      <p>{{ crate::web::fmt::plural(data.commits.len(), "commit") }}, {{ crate::web::fmt::plural(data.files, "file") }}<br>
+        <span class="text-success">+{{ data.additions }}</span> <span class="text-danger">−{{ data.deletions }}</span></p>
+    </div>
+    <div class="sidebar-item">
+      <h3>Checkout locally</h3>
+      <pre class="command command-sm">git fetch origin pull/{{ pr.number }}/head:pr-{{ pr.number }}
+git checkout pr-{{ pr.number }}</pre>
+    </div>
+  </aside>
+</div>
+
+{% else if pull_tab == "commits" %}
+{% if data.commits.is_empty() %}
+<div class="blankslate box"><p>No commits to show.</p></div>
+{% else %}
+<div class="box">
+  {% for c in data.commits %}
+  <div class="box-row commit-row">
+    <div class="commit-main">
+      <a class="commit-title" href="{{ base }}/commit/{{ c.id }}">{{ c.summary }}</a>
+      <div class="commit-meta">
+        {{ crate::web::fmt::avatar(c.author_name, 18)|safe }}
+        <strong>{{ c.author_name }}</strong> committed <time title="{{ crate::web::fmt::datetime_full(c.committer_time) }}">{{ crate::web::fmt::ago(c.committer_time) }}</time>
+      </div>
+    </div>
+    <div class="commit-actions">
+      <div class="btn-group">
+        <a class="btn btn-sm btn-mono" href="{{ base }}/commit/{{ c.id }}">{{ c.short_id }}</a>
+        <button type="button" class="btn btn-sm" data-copy-text="{{ c.id }}" title="Copy full SHA">{{ crate::web::fmt::icon("copy")|safe }}</button>
+      </div>
+      <a class="btn btn-sm btn-ghost" href="{{ base }}/tree/{{ c.id }}" title="Browse the repository at this point">{{ crate::web::fmt::icon("code")|safe }}</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% else %}
+{% if let Some(diff) = data.diff %}
+{% let file_ref = pr.head_sha.clone().unwrap_or(crate::web::fmt::urlpath(pr.head_branch)) %}
+{% include "partials/diff.html" %}
+{% else %}
+<div class="blankslate box"><p>The changes for this pull request are no longer available.</p></div>
+{% endif %}
+{% endif %}
+{% endblock %}

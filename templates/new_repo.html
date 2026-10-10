@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}New repository · Openhub{% endblock %}
+{% block content %}
+<div class="narrow">
+  <div class="page-header">
+    <h1>Create a new repository</h1>
+    <p class="text-muted">A repository contains all your project's files and their revision history.</p>
+  </div>
+  {% if let Some(e) = error %}<div class="flash flash-error">{{ crate::web::fmt::icon("circle-alert")|safe }}<span>{{ e }}</span></div>{% endif %}
+  <form method="post" action="/new" class="form">
+    <div class="field-row">
+      <div class="field">
+        <span class="field-label">Owner</span>
+        <div class="input input-static">{% if let Some(u) = ctx.user %}{{ crate::web::fmt::avatar(u.username, 18)|safe }} {{ u.username }}{% endif %}</div>
+      </div>
+      <span class="field-row-sep">/</span>
+      <label class="field field-grow">
+        <span class="field-label">Repository name</span>
+        <input class="input" type="text" name="name" value="{{ name }}" maxlength="100" autocapitalize="off" autofocus required>
+      </label>
+    </div>
+    <label class="field">
+      <span class="field-label">Description <span class="text-muted">(optional)</span></span>
+      <input class="input" type="text" name="description" value="{{ description }}" maxlength="350">
+    </label>
+    <fieldset class="field radio-cards">
+      <label class="radio-card">
+        <input type="radio" name="visibility" value="public"{% if !private %} checked{% endif %}>
+        {{ crate::web::fmt::icon("book-marked")|safe }}
+        <span><strong>Public</strong><span class="text-muted">Anyone who can reach this server can see and clone this repository.</span></span>
+      </label>
+      <label class="radio-card">
+        <input type="radio" name="visibility" value="private"{% if private %} checked{% endif %}>
+        {{ crate::web::fmt::icon("lock")|safe }}
+        <span><strong>Private</strong><span class="text-muted">Only you and collaborators you add can see this repository.</span></span>
+      </label>
+    </fieldset>
+    <label class="checkbox">
+      <input type="checkbox" name="readme" value="1"{% if readme %} checked{% endif %}>
+      <span><strong>Add a README file</strong><span class="text-muted">Start with an initial commit so you can clone the repository right away.</span></span>
+    </label>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Create repository</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

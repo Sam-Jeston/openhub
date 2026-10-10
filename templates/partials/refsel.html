@@ -1,0 +1,19 @@
+<details class="dropdown ref-selector">
+  <summary class="btn" title="Switch branches or tags">{{ crate::web::fmt::icon(refsel.icon())|safe }}<span class="ref-name">{{ refsel.current }}</span>{{ crate::web::fmt::icon("chevron-down")|safe }}</summary>
+  <div class="dropdown-menu dropdown-wide">
+    <div class="dropdown-header">Switch branches/tags</div>
+    <div class="dropdown-filter"><input class="input input-sm" type="search" placeholder="Filter branches and tags" data-filter aria-label="Filter"></div>
+    <div class="dropdown-scroll">
+      <div class="dropdown-section">Branches</div>
+      {% for b in refsel.branches %}
+      <a class="dropdown-item{% if b.selected %} selected{% endif %}" href="{{ b.href }}" data-filter-item>{% if b.selected %}{{ crate::web::fmt::icon("check")|safe }}{% else %}<span class="icon-spacer"></span>{% endif %}<span class="truncate">{{ b.name }}</span></a>
+      {% endfor %}
+      {% if !refsel.tags.is_empty() %}
+      <div class="dropdown-section">Tags</div>
+      {% for t in refsel.tags %}
+      <a class="dropdown-item{% if t.selected %} selected{% endif %}" href="{{ t.href }}" data-filter-item>{% if t.selected %}{{ crate::web::fmt::icon("check")|safe }}{% else %}<span class="icon-spacer"></span>{% endif %}<span class="truncate">{{ t.name }}</span></a>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</details>

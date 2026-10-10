@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Sign up · Openhub{% endblock %}
+{% block page_class %}auth-page{% endblock %}
+{% block content %}
+<div class="auth-card">
+  <h1>Create your account</h1>
+  {% if !allowed %}
+  <div class="box box-body">
+    <p>Registration is disabled on this server. Ask an administrator to create an account for you.</p>
+    <a class="btn btn-block" href="/login">Sign in instead</a>
+  </div>
+  {% else %}
+  {% if first_user %}
+  <div class="flash flash-info">{{ crate::web::fmt::icon("circle-alert")|safe }}<span>This is the first account on this server, so it will be the administrator.</span></div>
+  {% endif %}
+  {% if let Some(e) = error %}<div class="flash flash-error">{{ crate::web::fmt::icon("circle-alert")|safe }}<span>{{ e }}</span></div>{% endif %}
+  <form method="post" action="/register" class="box box-body form">
+    <label class="field">
+      <span class="field-label">Username</span>
+      <input class="input" type="text" name="username" value="{{ username }}" autocomplete="username" autocapitalize="off" maxlength="39" pattern="[A-Za-z0-9\-]+" autofocus required>
+      <span class="field-hint">Letters, numbers and single hyphens.</span>
+    </label>
+    <label class="field">
+      <span class="field-label">Email</span>
+      <input class="input" type="email" name="email" value="{{ email }}" autocomplete="email" required>
+      <span class="field-hint">Used for merge commits you create on the web.</span>
+    </label>
+    <label class="field">
+      <span class="field-label">Password</span>
+      <input class="input" type="password" name="password" autocomplete="new-password" minlength="8" required>
+      <span class="field-hint">At least 8 characters.</span>
+    </label>
+    <button class="btn btn-primary btn-block" type="submit">Create account</button>
+  </form>
+  {% endif %}
+  <div class="auth-alt">Already have an account? <a href="/login">Sign in</a>.</div>
+</div>
+{% endblock %}

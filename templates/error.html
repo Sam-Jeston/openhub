@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Openhub{% endblock %}
+{% block content %}
+<div class="blankslate blankslate-page">
+  <div class="blankslate-code">{{ status }}</div>
+  <h1>{{ title }}</h1>
+  <p>{{ message }}</p>
+  <div class="blankslate-actions">
+    <a class="btn" href="/">Go to the homepage</a>
+    {% if ctx.user.is_none() && status == 404 %}<a class="btn btn-primary" href="/login?next={{ crate::web::fmt::urlencode(ctx.path) }}">Sign in</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

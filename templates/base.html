@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Openhub{% endblock %}</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css?v={{ crate::web::assets::version() }}">
+  <script src="/static/app.js?v={{ crate::web::assets::version() }}" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="currentColor" opacity=".14"/><circle cx="11" cy="9" r="3" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="11" cy="23" r="3" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="22" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M11 12v8M22 15c0 4-4 5-8.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <span>Openhub</span>
+      </a>
+      <nav class="site-nav">
+        <a href="/explore">Explore</a>
+      </nav>
+      <div class="site-header-right">
+        {% if let Some(user) = ctx.user %}
+        <a class="header-button" href="/new" title="New repository">{{ crate::web::fmt::icon("plus")|safe }}<span class="hide-sm">New</span></a>
+        <details class="dropdown dropdown-right">
+          <summary class="header-avatar" aria-label="Account menu">{{ crate::web::fmt::avatar(user.username, 26)|safe }}{{ crate::web::fmt::icon("chevron-down")|safe }}</summary>
+          <div class="dropdown-menu">
+            <div class="dropdown-header">Signed in as <strong>{{ user.username }}</strong></div>
+            <a class="dropdown-item" href="/{{ user.username }}">{{ crate::web::fmt::icon("user")|safe }} Your profile</a>
+            <a class="dropdown-item" href="/settings/keys">{{ crate::web::fmt::icon("key-round")|safe }} SSH keys</a>
+            <a class="dropdown-item" href="/settings/profile">{{ crate::web::fmt::icon("settings")|safe }} Settings</a>
+            <div class="dropdown-divider"></div>
+            <form method="post" action="/logout">
+              <button type="submit" class="dropdown-item">{{ crate::web::fmt::icon("log-out")|safe }} Sign out</button>
+            </form>
+          </div>
+        </details>
+        {% else %}
+        <a class="header-link" href="/login?next={{ crate::web::fmt::urlencode(ctx.path) }}">Sign in</a>
+        <a class="header-button" href="/register">Sign up</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  {% block subheader %}{% endblock %}
+  <main class="page {% block page_class %}{% endblock %}">
+    <div class="container">
+      {% if let Some(flash) = ctx.flash %}
+      <div class="flash flash-{{ flash.kind }}" role="status">
+        {% if flash.kind == "error" %}{{ crate::web::fmt::icon("circle-alert")|safe }}{% else %}{{ crate::web::fmt::icon("circle-check")|safe }}{% endif %}
+        <span>{{ flash.message }}</span>
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="container">
+      <span>Openhub</span>
+      <span class="dot">·</span>
+      <span>Self-hosted git</span>
+      <span class="dot">·</span>
+      <a href="/explore">Explore repositories</a>
+    </div>
+  </footer>
+</body>
+</html>

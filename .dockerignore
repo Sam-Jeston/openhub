@@ -1,0 +1,12 @@
+# The Dockerfile copies only what it needs; this keeps the build context small
+# and keeps local data and secrets out of it.
+target
+data
+.git
+.env
+docs
+scripts
+*.db
+*.db-shm
+*.db-wal
+ssh_host_*_key

@@ -1,0 +1,21 @@
+services:
+  openhub:
+    build: .
+    image: openhub:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000" # web interface and read-only git over HTTP
+      - "2222:2222" # git over SSH
+    environment:
+      # The URL people use to reach the web interface (used for links and clone URLs).
+      OPENHUB_PUBLIC_URL: "http://localhost:3000"
+      # Host and port shown in SSH clone URLs, if they differ from the above.
+      # OPENHUB_SSH_HOST: "git.example.com"
+      # OPENHUB_SSH_PORT: "2222"
+      # Turn off sign-ups once your accounts exist.
+      # OPENHUB_DISABLE_REGISTRATION: "true"
+    volumes:
+      - openhub-data:/data
+
+volumes:
+  openhub-data:

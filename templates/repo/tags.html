@@ -1,0 +1,35 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}Tags · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+<div class="page-subheader">
+  <h2>Tags</h2>
+  <a class="btn btn-sm" href="{{ base }}/branches">{{ crate::web::fmt::icon("git-branch")|safe }} Branches</a>
+</div>
+{% if tags.is_empty() %}
+<div class="blankslate">
+  {{ crate::web::fmt::icon("tag")|safe }}
+  <h3>No tags yet</h3>
+  <p>Tags mark specific points in history, such as releases. Create one with <code>git tag v1.0.0 &amp;&amp; git push --tags</code>.</p>
+</div>
+{% else %}
+<div class="box">
+  {% for t in tags %}
+  <div class="box-row tag-row">
+    <div class="tag-main">
+      <a class="tag-name" href="{{ base }}/tree/{{ crate::web::fmt::urlpath(t.name) }}">{{ crate::web::fmt::icon("tag")|safe }} {{ t.name }}</a>
+      {% if let Some(m) = t.message %}<p class="tag-message">{{ m }}</p>{% endif %}
+      <div class="text-muted text-small">
+        <time title="{{ crate::web::fmt::datetime_full(t.commit.committer_time) }}">{{ crate::web::fmt::date(t.commit.committer_time) }}</time>
+        <span class="dot">·</span>
+        <a class="text-mono" href="{{ base }}/commit/{{ t.commit.id }}">{{ t.commit.short_id }}</a>
+        <span class="dot">·</span>
+        {{ t.commit.summary }}
+      </div>
+    </div>
+    <a class="btn btn-sm btn-ghost" href="{{ base }}/tree/{{ crate::web::fmt::urlpath(t.name) }}">{{ crate::web::fmt::icon("code")|safe }} Browse</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

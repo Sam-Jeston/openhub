@@ -1,0 +1,28 @@
+<details class="dropdown dropdown-right clone-dropdown">
+  <summary class="btn btn-primary">{{ crate::web::fmt::icon("code")|safe }} Clone {{ crate::web::fmt::icon("chevron-down")|safe }}</summary>
+  <div class="dropdown-menu dropdown-wide">
+    <div class="clone-panel">
+      <div class="clone-tabs" role="tablist">
+        <button type="button" class="clone-tab selected" data-clone-tab="ssh">SSH</button>
+        <button type="button" class="clone-tab" data-clone-tab="https">HTTPS</button>
+      </div>
+      <div class="clone-pane" data-clone-pane="ssh">
+        <div class="input-group">
+          <input class="input input-mono" type="text" readonly value="{{ r.ssh_url }}" id="clone-ssh" aria-label="SSH clone URL">
+          <button type="button" class="btn" data-copy="#clone-ssh" title="Copy">{{ crate::web::fmt::icon("copy")|safe }}</button>
+        </div>
+        <p class="hint">Use a password-protected SSH key. <a href="/settings/keys">Manage keys</a></p>
+      </div>
+      <div class="clone-pane" data-clone-pane="https" hidden>
+        <div class="input-group">
+          <input class="input input-mono" type="text" readonly value="{{ r.http_url }}" id="clone-https" aria-label="HTTPS clone URL">
+          <button type="button" class="btn" data-copy="#clone-https" title="Copy">{{ crate::web::fmt::icon("copy")|safe }}</button>
+        </div>
+        <p class="hint">HTTPS is read-only. Push over SSH.</p>
+      </div>
+    </div>
+    <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="{{ r.base() }}/archive/{{ crate::web::fmt::urlpath(view.refname) }}.zip">{{ crate::web::fmt::icon("download")|safe }} Download ZIP</a>
+    <a class="dropdown-item" href="{{ r.base() }}/archive/{{ crate::web::fmt::urlpath(view.refname) }}.tar.gz">{{ crate::web::fmt::icon("download")|safe }} Download tar.gz</a>
+  </div>
+</details>

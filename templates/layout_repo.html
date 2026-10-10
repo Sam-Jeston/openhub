@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{% block page_title %}{% endblock %}{{ r.repo.owner }}/{{ r.repo.name }} · Openhub{% endblock %}
+{% block page_class %}repo-page{% endblock %}
+{% block subheader %}
+{% let base = r.base() %}
+<div class="repo-header">
+  <div class="container">
+    <div class="repo-title">
+      <span class="repo-icon">{% if r.repo.is_private %}{{ crate::web::fmt::icon("lock")|safe }}{% else %}{{ crate::web::fmt::icon("book-marked")|safe }}{% endif %}</span>
+      <a class="repo-owner" href="/{{ r.repo.owner }}">{{ r.repo.owner }}</a>
+      <span class="repo-sep">/</span>
+      <a class="repo-name" href="{{ base }}">{{ r.repo.name }}</a>
+      <span class="label">{% if r.repo.is_private %}Private{% else %}Public{% endif %}</span>
+    </div>
+    <nav class="tabs" aria-label="Repository">
+      <a class="tab{% if tab == "code" %} selected{% endif %}" href="{{ base }}">{{ crate::web::fmt::icon("code")|safe }} Code</a>
+      <a class="tab{% if tab == "commits" %} selected{% endif %}" href="{{ base }}/commits">{{ crate::web::fmt::icon("history")|safe }} Commits</a>
+      <a class="tab{% if tab == "branches" %} selected{% endif %}" href="{{ base }}/branches">{{ crate::web::fmt::icon("git-branch")|safe }} Branches</a>
+      <a class="tab{% if tab == "pulls" %} selected{% endif %}" href="{{ base }}/pulls">{{ crate::web::fmt::icon("git-pull-request")|safe }} Pull requests{% if r.open_pulls > 0 %} <span class="counter">{{ r.open_pulls }}</span>{% endif %}</a>
+      {% if r.access.admin %}
+      <a class="tab{% if tab == "settings" %} selected{% endif %}" href="{{ base }}/settings">{{ crate::web::fmt::icon("settings")|safe }} Settings</a>
+      {% endif %}
+    </nav>
+  </div>
+</div>
+{% endblock %}

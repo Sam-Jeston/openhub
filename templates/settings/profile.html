@@ -1,0 +1,44 @@
+{% extends "layout_settings.html" %}
+{% block title %}Profile settings · Openhub{% endblock %}
+{% block settings %}
+<section class="settings-section">
+  <h2 class="settings-title">Public profile</h2>
+  {% if let Some(e) = error %}<div class="flash flash-error">{{ crate::web::fmt::icon("circle-alert")|safe }}<span>{{ e }}</span></div>{% endif %}
+  <form method="post" action="/settings/profile" class="form">
+    <label class="field">
+      <span class="field-label">Display name</span>
+      <input class="input" type="text" name="display_name" value="{{ display_name }}" maxlength="100">
+      <span class="field-hint">Shown on your profile instead of your username.</span>
+    </label>
+    <label class="field">
+      <span class="field-label">Email</span>
+      <input class="input" type="email" name="email" value="{{ email }}" required>
+      <span class="field-hint">Used as the author email for merges you perform on the web.</span>
+    </label>
+    <label class="field">
+      <span class="field-label">Bio</span>
+      <textarea class="input" name="bio" rows="3" maxlength="500">{{ bio }}</textarea>
+    </label>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Update profile</button></div>
+  </form>
+</section>
+<section class="settings-section">
+  <h2 class="settings-title">Change password</h2>
+  {% if let Some(e) = password_error %}<div class="flash flash-error">{{ crate::web::fmt::icon("circle-alert")|safe }}<span>{{ e }}</span></div>{% endif %}
+  <form method="post" action="/settings/password" class="form">
+    <label class="field">
+      <span class="field-label">Current password</span>
+      <input class="input" type="password" name="current" autocomplete="current-password" required>
+    </label>
+    <label class="field">
+      <span class="field-label">New password</span>
+      <input class="input" type="password" name="new" autocomplete="new-password" minlength="8" required>
+    </label>
+    <label class="field">
+      <span class="field-label">Confirm new password</span>
+      <input class="input" type="password" name="confirm" autocomplete="new-password" minlength="8" required>
+    </label>
+    <div class="form-actions"><button class="btn" type="submit">Change password</button></div>
+  </form>
+</section>
+{% endblock %}

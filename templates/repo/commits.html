@@ -1,0 +1,28 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}Commits · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+<div class="code-toolbar">
+  {% let refsel = view.refsel %}
+  {% include "partials/refsel.html" %}
+  {% if !view.path.is_empty() %}
+  <span class="toolbar-text">History for <a href="{{ base }}/blob/{{ crate::web::fmt::urlpath(view.refname) }}/{{ crate::web::fmt::urlpath(view.path) }}"><strong class="text-mono">{{ view.path }}</strong></a></span>
+  {% endif %}
+</div>
+{% if view.groups.is_empty() %}
+<div class="blankslate">
+  {{ crate::web::fmt::icon("history")|safe }}
+  <h3>No commits found</h3>
+  <p>There is no history for this path on {{ view.refname }}.</p>
+</div>
+{% else %}
+{% let groups = view.groups %}
+{% include "partials/commit_list.html" %}
+{% endif %}
+{% if view.newer_href.is_some() || view.older_href.is_some() %}
+<nav class="pagination">
+  {% if let Some(h) = view.newer_href %}<a class="btn" href="{{ h }}">Newer</a>{% else %}<span class="btn disabled">Newer</span>{% endif %}
+  {% if let Some(h) = view.older_href %}<a class="btn" href="{{ h }}">Older</a>{% else %}<span class="btn disabled">Older</span>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

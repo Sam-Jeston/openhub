@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="settings-header">
+  {% if let Some(u) = ctx.user %}{{ crate::web::fmt::avatar(u.username, 40)|safe }}
+  <div>
+    <h1>{{ u.name() }}</h1>
+    <div class="text-muted">Your personal account</div>
+  </div>
+  {% endif %}
+</div>
+<div class="layout-settings">
+  <nav class="side-nav" aria-label="Settings">
+    <a class="side-nav-item{% if tab == "profile" %} selected{% endif %}" href="/settings/profile">{{ crate::web::fmt::icon("user")|safe }} Profile &amp; password</a>
+    <a class="side-nav-item{% if tab == "keys" %} selected{% endif %}" href="/settings/keys">{{ crate::web::fmt::icon("key-round")|safe }} SSH keys</a>
+  </nav>
+  <div class="settings-main">
+    {% block settings %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{# Expects `repos` (Vec<Repo>). #}
+<ul class="repo-list">
+  {% for repo in repos %}
+  <li class="repo-item">
+    <div class="repo-item-main">
+      <h3>
+        <a href="/{{ repo.owner }}/{{ repo.name }}"><span class="text-muted">{{ repo.owner }} /</span> {{ repo.name }}</a>
+        <span class="label">{% if repo.is_private %}Private{% else %}Public{% endif %}</span>
+      </h3>
+      {% if !repo.description.is_empty() %}<p class="repo-item-desc">{{ repo.description }}</p>{% endif %}
+      <div class="repo-item-meta">
+        {% if let Some(pushed) = repo.pushed_at %}
+        Updated <time title="{{ crate::web::fmt::datetime_full(pushed) }}">{{ crate::web::fmt::ago(pushed) }}</time>
+        {% else %}
+        Created <time title="{{ crate::web::fmt::datetime_full(repo.created_at) }}">{{ crate::web::fmt::ago(repo.created_at) }}</time>
+        {% endif %}
+      </div>
+    </div>
+  </li>
+  {% endfor %}
+</ul>

@@ -1,0 +1,69 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}{{ view.path }} at {{ view.refname }} · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+<div class="code-toolbar">
+  {% let refsel = view.refsel %}
+  {% include "partials/refsel.html" %}
+  <nav class="breadcrumbs" aria-label="Path">
+    <a href="{{ base }}/tree/{{ crate::web::fmt::urlpath(view.refname) }}"><strong>{{ r.repo.name }}</strong></a>
+    {% for c in view.crumbs %}<span class="crumb-sep">/</span><a href="{{ c.href }}">{{ c.name }}</a>{% endfor %}
+    <span class="crumb-sep">/</span><strong>{{ view.file_name }}</strong>
+    <button type="button" class="btn btn-sm btn-ghost btn-icon" data-copy-text="{{ view.path }}" title="Copy path">{{ crate::web::fmt::icon("copy")|safe }}</button>
+  </nav>
+</div>
+{% if let Some(c) = view.latest %}
+<div class="box latest-commit-box">
+  <div class="box-header latest-commit">
+    {{ crate::web::fmt::avatar(c.author_name, 22)|safe }}
+    <strong class="latest-author">{{ c.author_name }}</strong>
+    <a class="latest-message truncate" href="{{ base }}/commit/{{ c.id }}">{{ c.summary }}</a>
+    <span class="latest-meta">
+      <a class="text-mono text-muted" href="{{ base }}/commit/{{ c.id }}">{{ c.short_id }}</a>
+      <span class="dot">·</span>
+      <time title="{{ crate::web::fmt::datetime_full(c.committer_time) }}">{{ crate::web::fmt::ago(c.committer_time) }}</time>
+    </span>
+    <a class="history-link" href="{{ view.history_href }}">{{ crate::web::fmt::icon("history")|safe }} History</a>
+  </div>
+</div>
+{% endif %}
+<div class="box blob-box">
+  <div class="box-header blob-header">
+    <div class="blob-info">
+      {% if view.line_count > 0 %}<span>{{ crate::web::fmt::plural(view.line_count, "line") }}</span><span class="dot">·</span>{% endif %}
+      <span>{{ crate::web::fmt::bytes(view.size) }}</span>
+      {% if let Some(lang) = view.language %}<span class="dot">·</span><span>{{ lang }}</span>{% endif %}
+    </div>
+    <div class="blob-actions">
+      {% if view.is_markdown %}
+      <div class="btn-group">
+        <a class="btn btn-sm{% if !view.plain %} selected{% endif %}" href="?">Preview</a>
+        <a class="btn btn-sm{% if view.plain %} selected{% endif %}" href="?plain=1">Code</a>
+      </div>
+      {% endif %}
+      <a class="btn btn-sm" href="{{ view.raw_href }}">Raw</a>
+      <a class="btn btn-sm btn-icon" href="{{ view.raw_href }}" download="{{ view.file_name }}" title="Download">{{ crate::web::fmt::icon("download")|safe }}</a>
+    </div>
+  </div>
+  {% match view.content %}
+  {% when crate::web::code::BlobContent::Code with { lines } %}
+  <div class="code-scroll">
+    <table class="code-view" data-lines>
+      <tbody>
+        {% for line in lines %}
+        <tr id="L{{ loop.index }}"><td class="num"><a href="#L{{ loop.index }}">{{ loop.index }}</a></td><td class="code">{{ line|safe }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% when crate::web::code::BlobContent::Markdown with { html } %}
+  <article class="markdown-body">{{ html|safe }}</article>
+  {% when crate::web::code::BlobContent::Image with { src } %}
+  <div class="blob-image"><img src="{{ src }}" alt="{{ view.file_name }}"></div>
+  {% when crate::web::code::BlobContent::Binary %}
+  <div class="blob-note">Binary file not shown. <a href="{{ view.raw_href }}">View raw</a></div>
+  {% when crate::web::code::BlobContent::TooLarge %}
+  <div class="blob-note">This file is too large to display. <a href="{{ view.raw_href }}">View raw</a></div>
+  {% endmatch %}
+</div>
+{% endblock %}

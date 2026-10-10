@@ -1,0 +1,59 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}Branches · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+<div class="page-subheader">
+  <h2>Branches</h2>
+  <a class="btn btn-sm" href="{{ base }}/tags">{{ crate::web::fmt::icon("tag")|safe }} Tags</a>
+</div>
+{% if rows.is_empty() %}
+<div class="blankslate">
+  {{ crate::web::fmt::icon("git-branch")|safe }}
+  <h3>No branches yet</h3>
+  <p>Push to this repository to create a branch.</p>
+</div>
+{% else %}
+<div class="box">
+  <div class="box-row branch-row branch-header">
+    <div class="branch-main">Branch</div>
+    {% if rows.len() > 1 %}
+    <div class="ahead-behind" title="Commits behind and ahead of {{ r.repo.default_branch }}"><span class="ab-behind">Behind</span><span class="ab-divider"></span><span class="ab-ahead">Ahead</span></div>
+    {% endif %}
+    <div class="branch-actions"></div>
+  </div>
+  {% for row in rows %}
+  <div class="box-row branch-row">
+    <div class="branch-main">
+      <a class="branch-name" href="{{ base }}/tree/{{ crate::web::fmt::urlpath(row.branch.name) }}">{{ row.branch.name }}</a>
+      {% if row.is_default %}<span class="label">Default</span>{% endif %}
+      <div class="branch-meta">
+        Updated <time title="{{ crate::web::fmt::datetime_full(row.branch.commit.committer_time) }}">{{ crate::web::fmt::ago(row.branch.commit.committer_time) }}</time> by {{ row.branch.commit.author_name }}
+      </div>
+    </div>
+    {% if row.is_default %}
+    <div class="ahead-behind" aria-hidden="true"></div>
+    {% else %}
+    <div class="ahead-behind" title="{{ row.branch.behind }} commits behind, {{ row.branch.ahead }} commits ahead of {{ r.repo.default_branch }}">
+      <span class="ab-behind">{{ row.branch.behind }}</span>
+      <span class="ab-divider"></span>
+      <span class="ab-ahead">{{ row.branch.ahead }}</span>
+    </div>
+    {% endif %}
+    <div class="branch-actions">
+      {% if let Some(n) = row.pull %}
+      <a class="btn btn-sm" href="{{ base }}/pull/{{ n }}"><span class="state-color-open">{{ crate::web::fmt::icon("git-pull-request")|safe }}</span> #{{ n }}</a>
+      {% else if !row.is_default && row.branch.ahead > 0 %}
+      <a class="btn btn-sm" href="{{ base }}/compare/{{ crate::web::fmt::urlpath(r.repo.default_branch) }}...{{ crate::web::fmt::urlpath(row.branch.name) }}">New pull request</a>
+      {% endif %}
+      {% if r.access.write && !row.is_default %}
+      <form method="post" action="{{ base }}/branches/delete" data-confirm="Delete the branch “{{ row.branch.name }}”? This cannot be undone.">
+        <input type="hidden" name="branch" value="{{ row.branch.name }}">
+        <button class="btn btn-sm btn-danger btn-icon" type="submit" title="Delete branch">{{ crate::web::fmt::icon("trash-2")|safe }}</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

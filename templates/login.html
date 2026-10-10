@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Openhub{% endblock %}
+{% block page_class %}auth-page{% endblock %}
+{% block content %}
+<div class="auth-card">
+  <h1>Sign in to Openhub</h1>
+  {% if let Some(e) = error %}<div class="flash flash-error">{{ crate::web::fmt::icon("circle-alert")|safe }}<span>{{ e }}</span></div>{% endif %}
+  <form method="post" action="/login" class="box box-body form">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="field">
+      <span class="field-label">Username or email</span>
+      <input class="input" type="text" name="login" value="{{ login }}" autocomplete="username" autocapitalize="off" autofocus required>
+    </label>
+    <label class="field">
+      <span class="field-label">Password</span>
+      <input class="input" type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+  </form>
+  {% if can_register %}
+  <div class="auth-alt">New here? <a href="/register">Create an account</a>.</div>
+  {% endif %}
+</div>
+{% endblock %}

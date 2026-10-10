@@ -1,0 +1,53 @@
+{# Expects `diff` (DiffSummary), `file_ref` (commit to link files at) and `base` (repo URL). #}
+<div class="diff-toolbar">
+  <span>Showing <strong>{{ crate::web::fmt::plural(diff.files.len(), "changed file") }}</strong> with <strong class="text-success">{{ crate::web::fmt::plural(diff.additions, "addition") }}</strong> and <strong class="text-danger">{{ crate::web::fmt::plural(diff.deletions, "deletion") }}</strong>.</span>
+  {% if diff.files.len() > 1 %}
+  <details class="dropdown dropdown-right">
+    <summary class="btn btn-sm">{{ crate::web::fmt::icon("file")|safe }} Jump to file {{ crate::web::fmt::icon("chevron-down")|safe }}</summary>
+    <div class="dropdown-menu dropdown-wide">
+      <div class="dropdown-scroll">
+        {% for f in diff.files %}
+        <a class="dropdown-item" href="#diff-{{ f.index }}"><span class="diff-mini-stat"><span class="text-success">+{{ f.additions }}</span> <span class="text-danger">−{{ f.deletions }}</span></span><span class="truncate">{{ f.display_path() }}</span></a>
+        {% endfor %}
+      </div>
+    </div>
+  </details>
+  {% endif %}
+</div>
+{% for f in diff.files %}
+<div class="diff-file" id="diff-{{ f.index }}">
+  <div class="diff-file-header">
+    <button type="button" class="diff-toggle" data-collapse aria-label="Collapse file">{{ crate::web::fmt::icon("chevron-down")|safe }}</button>
+    <span class="diff-counts"><span class="text-success">+{{ f.additions }}</span> <span class="text-danger">−{{ f.deletions }}</span></span>
+    <span class="diff-blocks" aria-hidden="true">{% for b in f.stat_blocks() %}<span class="block block-{{ b }}"></span>{% endfor %}</span>
+    <span class="diff-path">{{ f.display_path() }}</span>
+    {% if f.status != "modified" %}<span class="label label-{{ f.status }}">{{ f.status }}</span>{% endif %}
+    {% if f.status != "deleted" %}
+    <a class="btn btn-sm btn-ghost diff-view" href="{{ base }}/blob/{{ file_ref }}/{{ crate::web::fmt::urlpath(f.new_path) }}">View file</a>
+    {% endif %}
+  </div>
+  <div class="diff-body">
+    {% if f.binary %}
+    <div class="diff-note">Binary file not shown.</div>
+    {% else if f.too_large %}
+    <div class="diff-note">Large diff not rendered ({{ f.additions }} additions, {{ f.deletions }} deletions).</div>
+    {% else if f.hunks.is_empty() %}
+    <div class="diff-note">{% if f.status == "renamed" %}File renamed without changes.{% else %}No content changes.{% endif %}</div>
+    {% else %}
+    <div class="diff-scroll">
+      <table class="diff-table">
+        {% for h in f.hunks %}
+        <tr class="diff-hunk"><td class="num"></td><td class="num"></td><td class="code">{{ h.header }}</td></tr>
+        {% for l in h.lines %}
+        <tr class="diff-line {{ l.class() }}"><td class="num">{% if let Some(n) = l.old_no %}{{ n }}{% endif %}</td><td class="num">{% if let Some(n) = l.new_no %}{{ n }}{% endif %}</td><td class="code"><span class="marker">{{ l.marker() }}</span>{{ l.html|safe }}</td></tr>
+        {% endfor %}
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% if diff.files.is_empty() %}
+<div class="blankslate blankslate-sm"><p>No file changes.</p></div>
+{% endif %}
