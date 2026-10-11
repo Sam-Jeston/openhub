@@ -44,6 +44,23 @@ cargo build --release
 
 By default the web interface listens on port `3000` and the SSH server on port `2222`. Everything is stored in `./data`.
 
+### On a Linux server with systemd
+
+`scripts/deploy-server.sh` installs Openhub on a Linux machine as a systemd service, over SSH. It copies your checkout to the machine, builds it there (installing Rust with rustup the first time) and runs `packaging/linux/install.sh`. The machine needs `git`, `curl` and a C compiler, and your SSH user needs `sudo`.
+
+```sh
+scripts/deploy-server.sh user@host
+```
+
+The service runs as the `openhub` user, keeps its data in `/var/lib/openhub`, starts at boot and restarts whenever it stops. The web interface listens on `127.0.0.1:3000` for a reverse proxy or tunnel on the same machine. SSH listens on port `2222` on every interface. Put your settings in `/etc/default/openhub`, then run `sudo systemctl restart openhub`:
+
+```sh
+OPENHUB_PUBLIC_URL=https://git.example.com
+OPENHUB_DISABLE_REGISTRATION=true
+```
+
+To upgrade, run the same command again. See [Operations → Running under systemd](docs/operations.md#running-under-systemd).
+
 ## Pushing your first repository
 
 1. Sign in and open **Settings → SSH keys**. Paste your public key, for example the contents of `~/.ssh/id_ed25519.pub`.

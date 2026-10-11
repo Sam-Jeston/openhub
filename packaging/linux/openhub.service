@@ -1,0 +1,46 @@
+# systemd unit for openhub, installed by packaging/linux/install.sh
+# (scripts/deploy-server.sh runs it for you). Serves the web interface on
+# loopback for a TLS-terminating proxy or tunnel on the same machine, and SSH
+# on every interface. Set OPENHUB_* variables (at least OPENHUB_PUBLIC_URL) in
+# /etc/default/openhub, then restart the service.
+[Unit]
+Description=Openhub git server
+After=network-online.target
+Wants=network-online.target
+# Keep retrying forever, e.g. while a disk is still mounting after a power cut.
+StartLimitIntervalSec=0
+
+[Service]
+User=openhub
+Group=openhub
+Environment=OPENHUB_DATA_DIR=/var/lib/openhub
+Environment=OPENHUB_HTTP_ADDR=127.0.0.1:3000
+Environment=OPENHUB_SSH_ADDR=0.0.0.0:2222
+# Make git fsync objects and refs, so a power cut just after a push can't leave
+# a ref pointing at an object that never reached the disk.
+Environment=GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsync GIT_CONFIG_VALUE_0=committed
+# The journal doesn't render colour codes.
+Environment=NO_COLOR=1
+EnvironmentFile=-/etc/default/openhub
+ExecStart=/usr/local/bin/openhub
+Restart=always
+RestartSec=2
+StateDirectory=openhub
+StateDirectoryMode=0750
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

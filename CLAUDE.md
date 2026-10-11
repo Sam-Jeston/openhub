@@ -16,6 +16,7 @@ cargo clippy --all-targets               # keep this warning-free
 cargo fmt
 scripts/smoke-test.sh [path/to/binary]   # end-to-end test against a throwaway instance
 docker compose up -d                     # production-style run (data in a named volume)
+scripts/deploy-server.sh user@host       # build on a Linux host over ssh and install/upgrade the systemd service
 ```
 
 - The smoke test needs `git`, `ssh`, `ssh-keygen` and `curl`. It uses ports 38080 and 38022; override them with `HTTP_PORT` and `SSH_PORT`. It creates and deletes its own temp directory.
@@ -54,6 +55,8 @@ docker compose up -d                     # production-style run (data in a named
 | `templates/` | askama templates. See `templates/CLAUDE.md` |
 | `static/` | `style.css`, `app.js`, `favicon.svg`. Compiled into the binary with `include_str!` |
 | `docs/` | System documentation (start at `docs/README.md`) and the README screenshots in `docs/screenshots/` |
+| `packaging/linux/` | systemd unit and `install.sh` (snapshot DB, swap binary, health check, roll back). See `docs/operations.md` |
+| `scripts/` | `smoke-test.sh` (end-to-end test) and `deploy-server.sh` (build and install over ssh) |
 
 ## How things fit together
 

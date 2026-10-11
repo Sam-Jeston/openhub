@@ -11,6 +11,31 @@ This page covers running an Openhub instance day to day: first start, reverse pr
 5. **Set `OPENHUB_DISABLE_REGISTRATION=true`** once everyone who needs an account has one, unless you intend to run an open instance.
 6. **Note the SSH host key fingerprint** from the startup log (`SSH host key fingerprint: SHA256:…`) so users can verify it on first connect.
 
+## Running under systemd
+
+`packaging/linux/` holds a systemd unit (`openhub.service`) and an installer (`install.sh`). `scripts/deploy-server.sh user@host` copies the checkout to the machine, builds it there and runs the installer over SSH (see the [README](../README.md#on-a-linux-server-with-systemd)).
+
+| Item | Where |
+| --- | --- |
+| Binary | `/usr/local/bin/openhub`. The previous one is kept as `openhub.prev` |
+| Unit | `/etc/systemd/system/openhub.service` |
+| Settings | `OPENHUB_*` variables in `/etc/default/openhub`. The first install creates it with commented examples |
+| Data directory | `/var/lib/openhub`, owned by the `openhub` system user |
+| Logs | `journalctl -u openhub` |
+| Source and build cache | `~/.cache/openhub-build` in the SSH user's home on the target |
+
+The unit listens for the web interface on `127.0.0.1:3000` and for SSH on `0.0.0.0:2222`. Override either in `/etc/default/openhub`.
+
+Each run of `install.sh`:
+
+1. Stops the service and copies `openhub.db` into `backups/<timestamp>/` in the data directory, keeping the last five. Repositories aren't copied.
+2. Swaps the binary, starts the service, and waits up to 20 seconds for the web interface to answer.
+3. If it doesn't answer, puts the previous binary back. If the new version had already migrated the database, restore the snapshot as described in [Upgrades](#upgrades).
+
+**Power cuts.** The unit restarts the server whenever it exits and never stops retrying (`Restart=always`, `StartLimitIntervalSec=0`). It also sets git's `core.fsync=committed` through `GIT_CONFIG_*` variables, so a push's objects and refs are on disk before git reports success. SQLite runs in WAL mode with `synchronous=NORMAL`, so a power cut can lose the last few database writes but doesn't corrupt the database.
+
+**Sandboxing.** The unit uses `ProtectSystem=strict`, so the server can only write to `/var/lib/openhub`. If you move the data directory, also allow it with `ReadWritePaths=` in a drop-in (`sudo systemctl edit openhub`).
+
 ## Logs
 
 Openhub logs to stdout through `tracing`. Set the level with `RUST_LOG`:
@@ -52,6 +77,17 @@ server {
 }
 ```
 
+**Cloudflare Tunnel** (an ingress rule in the `cloudflared` config, then `cloudflared tunnel route dns <tunnel> git.example.com`):
+
+```yaml
+ingress:
+  - hostname: git.example.com
+    service: http://127.0.0.1:3000
+  - service: http_status:404
+```
+
+A tunnel carries only the web interface. Clients still need to reach the SSH port another way, for example on the local network or through a forwarded port. Set `OPENHUB_SSH_HOST` to the address they use.
+
 Then set `OPENHUB_PUBLIC_URL=https://git.example.com`. The cross-origin check accepts form posts whose `Origin` matches either the public URL or the `Host` header, so proxies that rewrite `Host` still work.
 
 If you rate-limit at the proxy (recommended, see [Security](security.md#hardening-advice)), cover `POST /login`, `POST /register` and `/*/*/info/refs`.
@@ -71,7 +107,7 @@ Everything lives in the data directory (see [Architecture](architecture.md#data-
 ## Upgrades
 
 1. **Back up** the data directory.
-2. **Build or pull the new version.** From source, run `git pull && cargo build --release`. With Docker, run `docker compose build && docker compose up -d`.
+2. **Build or pull the new version.** From source, run `git pull && cargo build --release`. With Docker, run `docker compose build && docker compose up -d`. Under systemd, run `scripts/deploy-server.sh user@host` again: it snapshots the database itself, and puts the old binary back if the new one fails to start (see [Running under systemd](#running-under-systemd)).
 3. **Start it.** Pending database migrations run automatically at startup, before the servers listen.
 
 Migrations only go forward. To roll back, restore the backup taken in step 1 and run the old version.
