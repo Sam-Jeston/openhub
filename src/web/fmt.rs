@@ -32,6 +32,29 @@ pub fn icon(name: &str) -> String {
     crate::icons::icon(name)
 }
 
+/// Integer counts, in whichever width a template happens to pass.
+pub trait Count: Copy {
+    fn count(self) -> i64;
+}
+
+impl Count for i64 {
+    fn count(self) -> i64 {
+        self
+    }
+}
+
+impl Count for usize {
+    fn count(self) -> i64 {
+        self as i64
+    }
+}
+
+impl<T: Count + ?Sized> Count for &T {
+    fn count(self) -> i64 {
+        (*self).count()
+    }
+}
+
 /// "3 days ago" style relative time.
 pub fn ago(ts: impl Num<i64>) -> String {
     let delta = now() - ts.value();
@@ -80,16 +103,14 @@ pub fn bytes(n: impl Num<usize>) -> String {
     }
 }
 
-pub fn plural(n: impl Num<i64>, word: &str) -> String {
-    plural_i64(n.value(), word)
+/// "1 commit", "3 commits". Accepts `usize` counts such as commit totals.
+pub fn plural_size(n: impl Count, word: &str) -> String {
+    plural(n, word)
 }
 
-/// Same as `plural`, for `usize` counts such as commit and file totals.
-pub fn plural_size(n: impl Num<usize>, word: &str) -> String {
-    plural_i64(n.value() as i64, word)
-}
-
-fn plural_i64(n: i64, word: &str) -> String {
+/// "1 issue", "3 issues". Accepts `i64` counts such as row counts.
+pub fn plural(n: impl Count, word: &str) -> String {
+    let n = n.count();
     if n == 1 {
         format!("1 {word}")
     } else if word.ends_with("ch") || word.ends_with('s') || word.ends_with('x') {
