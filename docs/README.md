@@ -21,6 +21,7 @@ These pages fill the gap between those: they explain the mechanics, so you can c
 | [Accounts and access](accounts-and-access.md) | How sign-up, sessions and SSH keys work, and who may read, push to or administer a repository |
 | [Git transport](git-transport.md) | How `git push`, `fetch` and `clone` are served over SSH and HTTP, and how archives are built |
 | [Pull requests](pull-requests.md) | The pull request lifecycle, how heads and merge bases are tracked, and the three merge methods |
+| [Issues](issues.md) | The issue tracker: numbering, labels, comments, and closing and reopening |
 | [Web interface](web-interface.md) | Routes, the request pipeline, code browsing, diffs, syntax highlighting and Markdown |
 | [Security](security.md) | The threat model, the protections in place, known gaps and hardening advice |
 | [Operations](operations.md) | How to deploy, back up, upgrade, administer and troubleshoot an instance |
@@ -33,6 +34,7 @@ These pages fill the gap between those: they explain the mechanics, so you can c
 | What happens when someone pushes? | [Git transport → After a push](git-transport.md#after-a-push) (`sync::after_push` in `src/sync.rs`) |
 | How does Openhub notice a pull request was merged on the command line? | [Pull requests → Tracking open pull requests](pull-requests.md#tracking-open-pull-requests) |
 | How does a web merge avoid racing a concurrent push? | [Pull requests → Merging in the web interface](pull-requests.md#merging-in-the-web-interface) |
+| Why is issue #5 missing when #4 and #6 are pull requests? | [Issues → Numbering](issues.md#numbering) |
 | How does `/tree/feature/login/src` know where the branch name ends? | [Web interface → Refs and paths in URLs](web-interface.md#refs-and-paths-in-urls) |
 | Where is a repository stored on disk? | [Data model → Repositories on disk](data-model.md#repositories-on-disk) |
 | Which work uses libgit2, and which uses the `git` program? | [Architecture → libgit2 and the git executable](architecture.md#libgit2-and-the-git-executable) |

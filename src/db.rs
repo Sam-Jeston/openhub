@@ -766,3 +766,360 @@ pub async fn list_events(db: &Db, pr_id: i64) -> Result<Vec<PrEvent>> {
     .fetch_all(db)
     .await
 }
+
+// ---------------------------------------------------------------------------
+// Issues
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, FromRow)]
+pub struct Issue {
+    pub id: i64,
+    #[allow(dead_code)]
+    pub repo_id: i64,
+    pub number: i64,
+    pub title: String,
+    pub body: String,
+    pub author_id: i64,
+    pub author: String,
+    /// `open` or `closed`.
+    pub state: String,
+    /// `completed` or `not_planned` once closed.
+    pub state_reason: Option<String>,
+    pub closed_by: Option<String>,
+    pub closed_at: Option<i64>,
+    pub created_at: i64,
+    #[allow(dead_code)]
+    pub updated_at: i64,
+    pub comments: i64,
+    pub labels: String,
+}
+
+impl Issue {
+    pub fn is_open(&self) -> bool {
+        self.state == "open"
+    }
+
+    /// Labels as `(name, colour)` pairs. `labels` is a `\x1f`-separated list of
+    /// `name=#rrggbb` entries built by `ISSUE_SELECT`.
+    pub fn label_list(&self) -> Vec<(String, String)> {
+        self.labels
+            .split('\u{1f}')
+            .filter_map(|entry| {
+                let (name, color) = entry.split_once('=')?;
+                Some((name.to_string(), color.to_string()))
+            })
+            .collect()
+    }
+}
+
+const ISSUE_SELECT: &str = "SELECT i.id, i.repo_id, i.number, i.title, i.body, i.author_id, \
+     a.username AS author, i.state, i.state_reason, c.username AS closed_by, i.closed_at, \
+     i.created_at, i.updated_at, \
+     (SELECT COUNT(*) FROM issue_events e WHERE e.issue_id = i.id AND e.kind = 'comment') AS comments, \
+     COALESCE((SELECT group_concat(l.name || '=' || l.color, char(31)) \
+               FROM issue_labels il JOIN labels l ON l.id = il.label_id \
+               WHERE il.issue_id = i.id), '') AS labels \
+     FROM issues i JOIN users a ON a.id = i.author_id \
+     LEFT JOIN users c ON c.id = i.closed_by";
+
+pub async fn create_issue(
+    db: &Db,
+    repo_id: i64,
+    author_id: i64,
+    title: &str,
+    body: &str,
+) -> Result<i64> {
+    let mut tx = db.begin().await?;
+    // Issues and pull requests share one number space per repository.
+    let number: i64 = sqlx::query_scalar(
+        "SELECT MAX(n) + 1 FROM ( \
+             SELECT COALESCE(MAX(number), 0) AS n FROM issues WHERE repo_id = ?1 \
+             UNION ALL \
+             SELECT COALESCE(MAX(number), 0) AS n FROM pull_requests WHERE repo_id = ?1)",
+    )
+    .bind(repo_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    let now = now();
+    sqlx::query(
+        "INSERT INTO issues (repo_id, number, title, body, author_id, created_at, updated_at) \
+         VALUES (?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(repo_id)
+    .bind(number)
+    .bind(title)
+    .bind(body)
+    .bind(author_id)
+    .bind(now)
+    .bind(now)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(number)
+}
+
+pub async fn issue_by_number(db: &Db, repo_id: i64, number: i64) -> Result<Option<Issue>> {
+    sqlx::query_as(&format!(
+        "{ISSUE_SELECT} WHERE i.repo_id = ? AND i.number = ?"
+    ))
+    .bind(repo_id)
+    .bind(number)
+    .fetch_optional(db)
+    .await
+}
+
+pub struct IssueFilter {
+    pub open: bool,
+    pub label: Option<String>,
+}
+
+/// Lists issues, newest first. `open = true` lists open issues, otherwise
+/// closed ones.
+pub async fn list_issues(db: &Db, repo_id: i64, filter: &IssueFilter) -> Result<Vec<Issue>> {
+    let state = if filter.open { "open" } else { "closed" };
+    // A NULL `label` disables the label filter.
+    sqlx::query_as(&format!(
+        "{ISSUE_SELECT} WHERE i.repo_id = ?1 AND i.state = ?2 AND (?3 IS NULL OR EXISTS ( \
+             SELECT 1 FROM issue_labels il JOIN labels l ON l.id = il.label_id \
+             WHERE il.issue_id = i.id AND l.name = ?3)) \
+         ORDER BY i.number DESC"
+    ))
+    .bind(repo_id)
+    .bind(state)
+    .bind(filter.label.as_deref())
+    .fetch_all(db)
+    .await
+}
+
+pub async fn count_issues(db: &Db, repo_id: i64) -> Result<(i64, i64)> {
+    sqlx::query_as(
+        "SELECT COALESCE(SUM(state = 'open'), 0), COALESCE(SUM(state = 'closed'), 0) \
+         FROM issues WHERE repo_id = ?",
+    )
+    .bind(repo_id)
+    .fetch_one(db)
+    .await
+}
+
+pub async fn update_issue_text(db: &Db, id: i64, title: &str, body: &str) -> Result<()> {
+    sqlx::query("UPDATE issues SET title = ?, body = ?, updated_at = ? WHERE id = ?")
+        .bind(title)
+        .bind(body)
+        .bind(now())
+        .bind(id)
+        .execute(db)
+        .await?;
+    Ok(())
+}
+
+pub async fn close_issue(db: &Db, id: i64, user_id: i64, reason: Option<&str>) -> Result<()> {
+    let now = now();
+    sqlx::query(
+        "UPDATE issues SET state = 'closed', state_reason = ?, closed_by = ?, closed_at = ?, \
+         updated_at = ? WHERE id = ?",
+    )
+    .bind(reason)
+    .bind(user_id)
+    .bind(now)
+    .bind(now)
+    .bind(id)
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+pub async fn reopen_issue(db: &Db, id: i64) -> Result<()> {
+    sqlx::query(
+        "UPDATE issues SET state = 'open', state_reason = NULL, closed_by = NULL, \
+         closed_at = NULL, updated_at = ? WHERE id = ?",
+    )
+    .bind(now())
+    .bind(id)
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+#[derive(Debug, Clone, FromRow)]
+pub struct IssueEvent {
+    pub id: i64,
+    pub author: String,
+    pub kind: String,
+    pub body: String,
+    pub created_at: i64,
+}
+
+pub async fn add_issue_event(
+    db: &Db,
+    issue_id: i64,
+    author_id: Option<i64>,
+    kind: &str,
+    body: &str,
+) -> Result<()> {
+    let now = now();
+    sqlx::query(
+        "INSERT INTO issue_events (issue_id, author_id, kind, body, created_at) \
+         VALUES (?, ?, ?, ?, ?)",
+    )
+    .bind(issue_id)
+    .bind(author_id)
+    .bind(kind)
+    .bind(body)
+    .bind(now)
+    .execute(db)
+    .await?;
+    sqlx::query("UPDATE issues SET updated_at = ? WHERE id = ?")
+        .bind(now)
+        .bind(issue_id)
+        .execute(db)
+        .await?;
+    Ok(())
+}
+
+pub async fn list_issue_events(db: &Db, issue_id: i64) -> Result<Vec<IssueEvent>> {
+    sqlx::query_as(
+        "SELECT e.id, COALESCE(u.username, '') AS author, e.kind, e.body, e.created_at \
+         FROM issue_events e LEFT JOIN users u ON u.id = e.author_id \
+         WHERE e.issue_id = ? ORDER BY e.created_at, e.id",
+    )
+    .bind(issue_id)
+    .fetch_all(db)
+    .await
+}
+
+#[derive(Debug, Clone, FromRow)]
+pub struct Label {
+    #[allow(dead_code)]
+    pub id: i64,
+    pub name: String,
+    pub color: String,
+    pub open_count: i64,
+}
+
+pub async fn list_labels(db: &Db, repo_id: i64) -> Result<Vec<Label>> {
+    sqlx::query_as(
+        "SELECT l.id, l.name, l.color, \
+         (SELECT COUNT(*) FROM issue_labels il JOIN issues i ON i.id = il.issue_id \
+          WHERE il.label_id = l.id AND i.state = 'open') AS open_count \
+         FROM labels l WHERE l.repo_id = ? ORDER BY l.name COLLATE NOCASE",
+    )
+    .bind(repo_id)
+    .fetch_all(db)
+    .await
+}
+
+/// Returns the ID of the label, creating it with a deterministic colour if the
+/// repository does not have one with that name yet.
+pub async fn ensure_label(db: &Db, repo_id: i64, name: &str) -> Result<i64> {
+    if let Some(id) = sqlx::query_scalar("SELECT id FROM labels WHERE repo_id = ? AND name = ?")
+        .bind(repo_id)
+        .bind(name)
+        .fetch_optional(db)
+        .await?
+    {
+        return Ok(id);
+    }
+    let color = label_color(name);
+    sqlx::query("INSERT INTO labels (repo_id, name, color) VALUES (?, ?, ?)")
+        .bind(repo_id)
+        .bind(name)
+        .bind(&color)
+        .execute(db)
+        .await?;
+    sqlx::query_scalar("SELECT id FROM labels WHERE repo_id = ? AND name = ?")
+        .bind(repo_id)
+        .bind(name)
+        .fetch_one(db)
+        .await
+}
+
+/// Picks a colour from a small GitHub-style palette based on the label name,
+/// so the same label always looks the same in a repository.
+pub fn label_color(name: &str) -> String {
+    const PALETTE: [&str; 10] = [
+        "#d73a4a", "#a2eeef", "#0075ca", "#e4e669", "#d876e3", "#0e8a16", "#fbca04", "#c5def5",
+        "#bfdadc", "#f9d0c4",
+    ];
+    let mut hash: u32 = 5381;
+    for b in name.bytes() {
+        hash = hash.wrapping_mul(33).wrapping_add(u32::from(b));
+    }
+    PALETTE[(hash as usize) % PALETTE.len()].to_string()
+}
+
+pub async fn add_issue_label(db: &Db, issue_id: i64, label_id: i64) -> Result<()> {
+    sqlx::query("INSERT OR IGNORE INTO issue_labels (issue_id, label_id) VALUES (?, ?)")
+        .bind(issue_id)
+        .bind(label_id)
+        .execute(db)
+        .await?;
+    Ok(())
+}
+
+pub async fn clear_issue_labels(db: &Db, issue_id: i64) -> Result<()> {
+    sqlx::query("DELETE FROM issue_labels WHERE issue_id = ?")
+        .bind(issue_id)
+        .execute(db)
+        .await?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn label_colour_is_stable_and_from_palette() {
+        let a = label_color("bug");
+        assert_eq!(a, label_color("bug"));
+        assert!(a.starts_with('#') && a.len() == 7);
+        assert_ne!(label_color("bug"), label_color("enhancement"));
+    }
+
+    #[test]
+    fn issue_label_list_parses_pairs() {
+        let issue = Issue {
+            id: 1,
+            repo_id: 1,
+            number: 1,
+            title: "t".into(),
+            body: String::new(),
+            author_id: 1,
+            author: "alice".into(),
+            state: "open".into(),
+            state_reason: None,
+            closed_by: None,
+            closed_at: None,
+            created_at: 0,
+            updated_at: 0,
+            comments: 0,
+            labels: "bug=#d73a4a\u{1f}help wanted=#0075ca".into(),
+        };
+        let labels = issue.label_list();
+        assert_eq!(labels.len(), 2);
+        assert_eq!(labels[0], ("bug".to_string(), "#d73a4a".to_string()));
+        assert_eq!(labels[1].0, "help wanted");
+    }
+
+    #[test]
+    fn empty_labels_parse_to_nothing() {
+        let issue = Issue {
+            id: 1,
+            repo_id: 1,
+            number: 1,
+            title: "t".into(),
+            body: String::new(),
+            author_id: 1,
+            author: "alice".into(),
+            state: "open".into(),
+            state_reason: None,
+            closed_by: None,
+            closed_at: None,
+            created_at: 0,
+            updated_at: 0,
+            comments: 0,
+            labels: String::new(),
+        };
+        assert!(issue.label_list().is_empty());
+    }
+}

@@ -80,8 +80,16 @@ pub fn bytes(n: impl Num<usize>) -> String {
     }
 }
 
-pub fn plural(n: impl Num<usize>, word: &str) -> String {
-    let n = n.value();
+pub fn plural(n: impl Num<i64>, word: &str) -> String {
+    plural_i64(n.value(), word)
+}
+
+/// Same as `plural`, for `usize` counts such as commit and file totals.
+pub fn plural_size(n: impl Num<usize>, word: &str) -> String {
+    plural_i64(n.value() as i64, word)
+}
+
+fn plural_i64(n: i64, word: &str) -> String {
     if n == 1 {
         format!("1 {word}")
     } else if word.ends_with("ch") || word.ends_with('s') || word.ends_with('x') {

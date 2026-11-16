@@ -11,7 +11,7 @@ The web interface is server-rendered HTML: axum handlers fill askama templates, 
 - `src/web/mod.rs`: router and helpers.
 - `src/web/ctx.rs`: middleware.
 - `src/web/error.rs`: error handling.
-- `src/web/{account,home,repo,code,pulls}.rs`: page handlers.
+- `src/web/{account,home,repo,code,pulls,issues}.rs`: page handlers.
 - `src/web/fmt.rs`: template helpers.
 - `src/highlight.rs`, `src/markdown.rs`: content rendering.
 - `templates/`, `static/`: templates and static assets.
@@ -60,6 +60,11 @@ All routes are defined in `web::router`. "Read", "write" and "admin" refer to th
 | POST | `/{owner}/{repo}/pull/{n}/state` | `pulls::set_state` | Author or write |
 | POST | `/{owner}/{repo}/pull/{n}/edit` | `pulls::edit` | Author or write |
 | POST | `/{owner}/{repo}/pull/{n}/merge` | `pulls::merge` | Write |
+| GET, POST | `/{owner}/{repo}/issues` and `/issues/new` | `issues::list`, `issues::create`, `issues::new_form` | Read; creating needs a user. `?state=closed` and `?label=…` filter |
+| GET | `/{owner}/{repo}/issues/{n}` | `issues::show` | Read |
+| POST | `/{owner}/{repo}/issues/{n}/comment` | `issues::comment` | User plus read. `close=1` closes with the comment |
+| POST | `/{owner}/{repo}/issues/{n}/state` | `issues::set_state` | Author or write |
+| POST | `/{owner}/{repo}/issues/{n}/edit` | `issues::edit` | Author or write |
 | GET, POST | `/{owner}/{repo}/settings` | `repo::settings`, `repo::update_settings` | Admin |
 | POST | `/{owner}/{repo}/settings/collaborators` and `/collaborators/remove` | `repo::add_collaborator`, `repo::remove_collaborator` | Admin |
 | POST | `/{owner}/{repo}/settings/delete` | `repo::delete` | Admin |
@@ -114,7 +119,7 @@ pub async fn branches(
 ```
 
 - `WebResult` is `Result<Response, AppError>`.
-- `RepoCtx` (from `load_repo`) carries the repository row, the viewer's `Access`, the path on disk, the open pull request count and the clone URLs. Every repository template uses it.
+- `RepoCtx` (from `load_repo`) carries the repository row, the viewer's `Access`, the path on disk, the open pull request and issue counts and the clone URLs. Every repository template uses it.
 - **Mutations** are `POST` forms that end with `redirect` or `redirect_flash` (303 See Other, the post/redirect/get pattern). When validation fails, the handler re-renders the form with its values and an error message instead.
 
 ### Errors

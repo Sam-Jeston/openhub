@@ -1,0 +1,138 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}{{ view.title }} · Issue #{{ view.number }} · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+{% let view = view.clone() %}
+{% let iurl = format!("{}/issues/{}", base, view.number) %}
+<div class="pull-header">
+  <div class="pull-title-row">
+    <h1 class="pull-title">{{ view.title }} <span class="text-muted">#{{ view.number }}</span></h1>
+    {% if can_manage %}<button type="button" class="btn btn-sm" data-toggle="edit-issue">Edit</button>{% endif %}
+  </div>
+  <div class="pull-meta">
+    {% if view.state == "open" %}
+    <span class="state state-open">{{ crate::web::fmt::icon("circle-dot")|safe }} Open</span>
+    <span><strong>{{ view.author }}</strong> opened this issue <time title="{{ crate::web::fmt::datetime_full(view.created_at) }}">{{ crate::web::fmt::ago(view.created_at) }}</time> · {{ crate::web::fmt::plural(view.comments, "comment") }}</span>
+    {% else %}
+    <span class="state state-closed">{{ crate::web::fmt::icon("circle-check")|safe }} Closed</span>
+    <span><strong>{{ view.closed_by.clone().unwrap_or(view.author.clone()) }}</strong> closed this as <strong>{% if let Some(r) = view.state_reason %}{% if r == "not_planned" %}not planned{% else %}completed{% endif %}{% else %}completed{% endif %}</strong>{% if let Some(t) = view.closed_at %} <time title="{{ crate::web::fmt::datetime_full(t) }}">{{ crate::web::fmt::ago(t) }}</time>{% endif %}</span>
+    {% endif %}
+  </div>
+  {% if can_manage %}
+  <form id="edit-issue" class="box box-body form edit-pull" method="post" action="{{ iurl }}/edit" hidden>
+    <label class="field"><span class="field-label">Title</span><input class="input" type="text" name="title" value="{{ view.title }}" maxlength="256" required></label>
+    <label class="field"><span class="field-label">Description</span><textarea class="input" name="body" rows="8">{{ view.body }}</textarea></label>
+    <label class="field"><span class="field-label">Labels</span><input class="input" type="text" name="labels" value="{{ label_names }}"><span class="field-hint">Comma-separated. New labels are created automatically.</span></label>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <button class="btn" type="button" data-toggle="edit-issue">Cancel</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+
+<div class="layout-pull">
+  <div class="timeline">
+    <div class="timeline-comment">
+      <div class="timeline-avatar">{{ crate::web::fmt::avatar(view.author, 40)|safe }}</div>
+      <div class="comment">
+        <div class="comment-header">
+          <strong>{{ view.author }}</strong> <span class="text-muted">opened this issue <time title="{{ crate::web::fmt::datetime_full(view.created_at) }}">{{ crate::web::fmt::ago(view.created_at) }}</time></span>
+          <span class="label comment-role">Author</span>
+        </div>
+        <div class="comment-body markdown-body">
+          {% if view.body.is_empty() %}<p class="text-muted"><em>No description provided.</em></p>{% else %}{{ body_html|safe }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% for item in timeline %}
+    {% let e = item.event %}
+    {% if e.kind == "comment" %}
+    <div class="timeline-comment" id="event-{{ e.id }}">
+      <div class="timeline-avatar">{{ crate::web::fmt::avatar(e.author, 40)|safe }}</div>
+      <div class="comment">
+        <div class="comment-header">
+          <strong>{{ e.author }}</strong> <span class="text-muted">commented <a class="text-muted" href="#event-{{ e.id }}"><time title="{{ crate::web::fmt::datetime_full(e.created_at) }}">{{ crate::web::fmt::ago(e.created_at) }}</time></a></span>
+          {% if e.author == view.author %}<span class="label comment-role">Author</span>{% endif %}
+        </div>
+        <div class="comment-body markdown-body">{{ item.html|safe }}</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="timeline-event">
+      {% if e.kind == "closed" %}
+      <span class="event-badge badge-closed">{{ crate::web::fmt::icon("circle-check")|safe }}</span>
+      <span><strong>{{ e.author }}</strong> closed this as <strong>{% if e.body == "not_planned" %}not planned{% else %}completed{% endif %}</strong>
+      {% else if e.kind == "reopened" %}
+      <span class="event-badge badge-open">{{ crate::web::fmt::icon("circle-dot")|safe }}</span>
+      <span><strong>{{ e.author }}</strong> reopened this
+      {% else if e.kind == "renamed" %}
+      <span class="event-badge">{{ crate::web::fmt::icon("file-text")|safe }}</span>
+      <span><strong>{{ e.author }}</strong> renamed this to <strong>{{ e.body }}</strong>
+      {% else %}
+      <span class="event-badge">{{ crate::web::fmt::icon("clock")|safe }}</span>
+      <span>{{ e.kind }}
+      {% endif %}
+        <time class="text-muted" title="{{ crate::web::fmt::datetime_full(e.created_at) }}">{{ crate::web::fmt::ago(e.created_at) }}</time></span>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    {% if let Some(u) = ctx.user %}
+    <div class="timeline-comment comment-form-row">
+      <div class="timeline-avatar">{{ crate::web::fmt::avatar(u.username, 40)|safe }}</div>
+      <form class="comment comment-form" method="post" action="{{ iurl }}/comment">
+        <div class="comment-header"><strong>Add a comment</strong></div>
+        <div class="comment-form-body">
+          <textarea class="input" name="body" rows="5" placeholder="Leave a comment. Markdown is supported."></textarea>
+          <div class="form-actions form-actions-end">
+            {% if view.state == "open" && can_manage %}
+            <button class="btn btn-danger" type="submit" name="close" value="1" data-confirm="Close this issue?">Close with comment</button>
+            {% endif %}
+            <button class="btn btn-primary" type="submit">Comment</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    {% else %}
+    <div class="banner"><span><a href="/login?next={{ crate::web::fmt::urlencode(ctx.path) }}">Sign in</a> to join the conversation.</span></div>
+    {% endif %}
+  </div>
+
+  <aside class="pull-sidebar">
+    <div class="sidebar-item">
+      <h3>Labels</h3>
+      {% if label_names.is_empty() %}
+      <p class="text-muted">None yet</p>
+      {% else %}
+      <div class="label-cloud">
+        {% for (name, color) in labels %}
+        <a class="label issue-label" href="{{ base }}/issues?label={{ crate::web::fmt::urlencode(name) }}" style="--label-color: {{ color }}">{{ name }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% if can_manage %}
+    <div class="sidebar-item">
+      <h3>Actions</h3>
+      {% if view.state == "open" %}
+      <form class="issue-state-form" method="post" action="{{ iurl }}/state">
+        <input type="hidden" name="action" value="close">
+        <select class="input input-sm" name="reason" aria-label="Close reason">
+          <option value="completed">Close as completed</option>
+          <option value="not_planned">Close as not planned</option>
+        </select>
+        <button class="btn btn-sm btn-danger" type="submit">Close issue</button>
+      </form>
+      {% else %}
+      <form method="post" action="{{ iurl }}/state">
+        <input type="hidden" name="action" value="reopen">
+        <button class="btn btn-sm" type="submit">Reopen issue</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

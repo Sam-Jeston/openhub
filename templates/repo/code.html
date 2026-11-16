@@ -76,9 +76,9 @@
     {% endif %}
     <ul class="about-list">
       {% if view.readme.is_some() %}<li><a href="#readme">{{ crate::web::fmt::icon("book-marked")|safe }} Readme</a></li>{% endif %}
-      <li><a href="{{ base }}/commits">{{ crate::web::fmt::icon("history")|safe }} {{ crate::web::fmt::plural(view.commit_count, "commit") }}</a></li>
-      <li><a href="{{ base }}/branches">{{ crate::web::fmt::icon("git-branch")|safe }} {{ crate::web::fmt::plural(view.branch_count, "branch") }}</a></li>
-      <li><a href="{{ base }}/tags">{{ crate::web::fmt::icon("tag")|safe }} {{ crate::web::fmt::plural(view.tag_count, "tag") }}</a></li>
+      <li><a href="{{ base }}/commits">{{ crate::web::fmt::icon("history")|safe }} {{ crate::web::fmt::plural_size(view.commit_count, "commit") }}</a></li>
+      <li><a href="{{ base }}/branches">{{ crate::web::fmt::icon("git-branch")|safe }} {{ crate::web::fmt::plural_size(view.branch_count, "branch") }}</a></li>
+      <li><a href="{{ base }}/tags">{{ crate::web::fmt::icon("tag")|safe }} {{ crate::web::fmt::plural_size(view.tag_count, "tag") }}</a></li>
       <li><a href="{{ base }}/pulls">{{ crate::web::fmt::icon("git-pull-request")|safe }} {{ r.open_pulls }} open pull {% if r.open_pulls == 1 %}request{% else %}requests{% endif %}</a></li>
     </ul>
     {% if r.access.admin %}<a class="text-small" href="{{ base }}/settings">{{ crate::web::fmt::icon("settings")|safe }} Edit repository details</a>{% endif %}

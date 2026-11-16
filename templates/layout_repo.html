@@ -17,6 +17,7 @@
       <a class="tab{% if tab == "commits" %} selected{% endif %}" href="{{ base }}/commits">{{ crate::web::fmt::icon("history")|safe }} Commits</a>
       <a class="tab{% if tab == "branches" %} selected{% endif %}" href="{{ base }}/branches">{{ crate::web::fmt::icon("git-branch")|safe }} Branches</a>
       <a class="tab{% if tab == "pulls" %} selected{% endif %}" href="{{ base }}/pulls">{{ crate::web::fmt::icon("git-pull-request")|safe }} Pull requests{% if r.open_pulls > 0 %} <span class="counter">{{ r.open_pulls }}</span>{% endif %}</a>
+      <a class="tab{% if tab == "issues" %} selected{% endif %}" href="{{ base }}/issues">{{ crate::web::fmt::icon("circle-dot")|safe }} Issues{% if r.open_issues > 0 %} <span class="counter">{{ r.open_issues }}</span>{% endif %}</a>
       {% if r.access.admin %}
       <a class="tab{% if tab == "settings" %} selected{% endif %}" href="{{ base }}/settings">{{ crate::web::fmt::icon("settings")|safe }} Settings</a>
       {% endif %}

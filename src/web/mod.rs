@@ -6,6 +6,7 @@ pub mod error;
 pub mod fmt;
 mod git_http;
 mod home;
+mod issues;
 mod pulls;
 mod repo;
 
@@ -80,6 +81,21 @@ pub fn router(state: AppState) -> Router {
             post(pulls::set_state),
         )
         .route("/{owner}/{repo}/pull/{number}/edit", post(pulls::edit))
+        .route(
+            "/{owner}/{repo}/issues",
+            get(issues::list).post(issues::create),
+        )
+        .route("/{owner}/{repo}/issues/new", get(issues::new_form))
+        .route("/{owner}/{repo}/issues/{number}", get(issues::show))
+        .route(
+            "/{owner}/{repo}/issues/{number}/comment",
+            post(issues::comment),
+        )
+        .route(
+            "/{owner}/{repo}/issues/{number}/state",
+            post(issues::set_state),
+        )
+        .route("/{owner}/{repo}/issues/{number}/edit", post(issues::edit))
         .route(
             "/{owner}/{repo}/settings",
             get(repo::settings).post(repo::update_settings),

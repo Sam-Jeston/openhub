@@ -30,7 +30,7 @@
 <div class="box blob-box">
   <div class="box-header blob-header">
     <div class="blob-info">
-      {% if view.line_count > 0 %}<span>{{ crate::web::fmt::plural(view.line_count, "line") }}</span><span class="dot">·</span>{% endif %}
+      {% if view.line_count > 0 %}<span>{{ crate::web::fmt::plural_size(view.line_count, "line") }}</span><span class="dot">·</span>{% endif %}
       <span>{{ crate::web::fmt::bytes(view.size) }}</span>
       {% if let Some(lang) = view.language %}<span class="dot">·</span><span>{{ lang }}</span>{% endif %}
     </div>

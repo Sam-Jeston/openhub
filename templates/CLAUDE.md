@@ -36,7 +36,8 @@ Helpers live in `src/web/fmt.rs` and are called by full path:
 {{ crate::web::fmt::icon("git-branch")|safe }}            {# names: match arms in src/icons.rs #}
 {{ crate::web::fmt::avatar(user.username, 20)|safe }}
 <time title="{{ crate::web::fmt::datetime_full(c.committer_time) }}">{{ crate::web::fmt::ago(c.committer_time) }}</time>
-{{ crate::web::fmt::plural(view.commit_count, "commit") }} {# "1 commit", "3 commits", "2 branches" #}
+{{ crate::web::fmt::plural(view.issue_count, "issue") }} {# i64 counts: "1 issue", "3 issues" #}
+{{ crate::web::fmt::plural_size(view.commit_count, "commit") }} {# usize counts: "1 commit", "2 branches" #}
 {{ base }}/tree/{{ crate::web::fmt::urlpath(view.refname) }}/{{ crate::web::fmt::urlpath(entry.path) }}
 /login?next={{ crate::web::fmt::urlencode(ctx.path) }}
 ```

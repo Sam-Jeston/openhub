@@ -1,0 +1,29 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}New issue · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+<h1 class="settings-header issue-new-title">{{ crate::web::fmt::icon("circle-dot")|safe }} New issue</h1>
+<form class="box issue-form" method="post" action="{{ base }}/issues">
+  <div class="box-body issue-form-body">
+    {% if let Some(e) = error %}<div class="flash flash-error">{{ e }}</div>{% endif %}
+    <label class="field">
+      <span class="field-label">Title</span>
+      <input class="input" type="text" name="title" value="{{ title }}" maxlength="256" placeholder="A short, descriptive title" required autofocus>
+    </label>
+    <label class="field">
+      <span class="field-label">Description</span>
+      <textarea class="input" name="body" rows="10" placeholder="Describe the problem or idea. Markdown is supported.">{{ body }}</textarea>
+      <span class="field-hint">Markdown is supported. You can edit the description later.</span>
+    </label>
+    <label class="field">
+      <span class="field-label">Labels</span>
+      <input class="input" type="text" name="labels" value="{{ labels }}" placeholder="bug, enhancement">
+      <span class="field-hint">Comma-separated. New labels are created automatically.</span>
+    </label>
+  </div>
+  <div class="box-footer form-actions">
+    <button class="btn btn-primary" type="submit">Create issue</button>
+    <a class="btn" href="{{ base }}/issues">Cancel</a>
+  </div>
+</form>
+{% endblock %}

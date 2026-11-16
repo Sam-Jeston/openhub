@@ -13,6 +13,9 @@ fn body(name: &str) -> &'static str {
         "circle-alert" => {
             r#"<circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" />"#
         }
+        "circle-dot" => {
+            r#"<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="1" />"#
+        }
         "circle-check" => r#"<circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" />"#,
         "clock" => r#"<circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />"#,
         "code" => r#"<polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />"#,
@@ -69,6 +72,9 @@ fn body(name: &str) -> &'static str {
         }
         "message-square" => {
             r#"<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />"#
+        }
+        "circle-slash" => {
+            r#"<circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 14.2 14.2" />"#
         }
         "plus" => r#"<path d="M5 12h14" /><path d="M12 5v14" />"#,
         "search" => r#"<circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />"#,

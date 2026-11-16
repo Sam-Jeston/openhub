@@ -21,13 +21,13 @@
   <div class="pull-meta">
     {% if pr.state == "merged" %}
     <span class="state state-merged">{{ crate::web::fmt::icon("git-merge")|safe }} Merged</span>
-    <span><strong>{{ pr.merged_by.clone().unwrap_or(pr.author.clone()) }}</strong> merged {{ crate::web::fmt::plural(data.commits.len(), "commit") }} into <span class="branch-label">{{ pr.base_branch }}</span> from <span class="branch-label">{{ pr.head_branch }}</span>{% if let Some(t) = pr.merged_at %} <time title="{{ crate::web::fmt::datetime_full(t) }}">{{ crate::web::fmt::ago(t) }}</time>{% endif %}</span>
+    <span><strong>{{ pr.merged_by.clone().unwrap_or(pr.author.clone()) }}</strong> merged {{ crate::web::fmt::plural_size(data.commits.len(), "commit") }} into <span class="branch-label">{{ pr.base_branch }}</span> from <span class="branch-label">{{ pr.head_branch }}</span>{% if let Some(t) = pr.merged_at %} <time title="{{ crate::web::fmt::datetime_full(t) }}">{{ crate::web::fmt::ago(t) }}</time>{% endif %}</span>
     {% else if pr.state == "closed" %}
     <span class="state state-closed">{{ crate::web::fmt::icon("git-pull-request-closed")|safe }} Closed</span>
-    <span><strong>{{ pr.author }}</strong> wanted to merge {{ crate::web::fmt::plural(data.commits.len(), "commit") }} into <span class="branch-label">{{ pr.base_branch }}</span> from <span class="branch-label">{{ pr.head_branch }}</span></span>
+    <span><strong>{{ pr.author }}</strong> wanted to merge {{ crate::web::fmt::plural_size(data.commits.len(), "commit") }} into <span class="branch-label">{{ pr.base_branch }}</span> from <span class="branch-label">{{ pr.head_branch }}</span></span>
     {% else %}
     <span class="state state-open">{{ crate::web::fmt::icon("git-pull-request")|safe }} Open</span>
-    <span><strong>{{ pr.author }}</strong> wants to merge {{ crate::web::fmt::plural(data.commits.len(), "commit") }} into <span class="branch-label">{{ pr.base_branch }}</span> from <span class="branch-label">{{ pr.head_branch }}</span></span>
+    <span><strong>{{ pr.author }}</strong> wants to merge {{ crate::web::fmt::plural_size(data.commits.len(), "commit") }} into <span class="branch-label">{{ pr.base_branch }}</span> from <span class="branch-label">{{ pr.head_branch }}</span></span>
     {% endif %}
   </div>
 </div>
@@ -208,7 +208,7 @@ git push origin {{ pr.head_branch }}</pre>
     </div>
     <div class="sidebar-item">
       <h3>Changes</h3>
-      <p>{{ crate::web::fmt::plural(data.commits.len(), "commit") }}, {{ crate::web::fmt::plural(data.files, "file") }}<br>
+      <p>{{ crate::web::fmt::plural_size(data.commits.len(), "commit") }}, {{ crate::web::fmt::plural_size(data.files, "file") }}<br>
         <span class="text-success">+{{ data.additions }}</span> <span class="text-danger">−{{ data.deletions }}</span></p>
     </div>
     <div class="sidebar-item">

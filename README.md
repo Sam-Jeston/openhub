@@ -13,6 +13,7 @@ It ships as a single Rust binary with SQLite for storage, so a whole installatio
 - **Code browsing**: file trees with the latest commit for each entry, syntax-highlighted files with linkable line numbers, rendered Markdown READMEs, raw files, and ZIP/tar.gz downloads.
 - **History**: paginated commit logs (per branch, tag or path), commit pages with diffs, branches with ahead/behind counts, and tags.
 - **Pull requests**: compare branches, open a pull request, discuss it in Markdown comments, and review the commits and the diff. Merge with a merge commit, a squash or a rebase, then delete the branch. Pull requests merged with a plain `git push` are detected automatically.
+- **Issues**: open issues with a Markdown description and labels, discuss them in comments, then close them (as completed or not planned) and reopen them. Numbers are shared with pull requests.
 - **Accounts and access**: public and private repositories, plus collaborators with write access. The first account created is the site administrator.
 - **Comfortable to use**: light and dark themes, works on phone-sized screens, and needs no JavaScript for core features.
 
@@ -158,7 +159,7 @@ How the system works, including the architecture, data model, permissions, git t
 
 ## Out of scope
 
-Openhub deliberately covers only git hosting. It has no issues, CI, wikis, releases, forks, organisations or line-level review comments.
+Openhub deliberately keeps its scope small: git hosting with a basic issue tracker (create, comment, label, close and reopen). It has no CI, wikis, releases, forks, organisations or line-level review comments.
 
 ## License
 

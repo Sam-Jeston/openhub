@@ -67,9 +67,9 @@
   {% endif %}
 
   <div class="compare-summary box">
-    <span>{{ crate::web::fmt::icon("git-commit-horizontal")|safe }} <strong>{{ crate::web::fmt::plural(view.commits.len(), "commit") }}</strong></span>
+    <span>{{ crate::web::fmt::icon("git-commit-horizontal")|safe }} <strong>{{ crate::web::fmt::plural_size(view.commits.len(), "commit") }}</strong></span>
     {% if let Some(d) = view.diff %}
-    <span>{{ crate::web::fmt::icon("file-text")|safe }} <strong>{{ crate::web::fmt::plural(d.files.len(), "file") }} changed</strong></span>
+    <span>{{ crate::web::fmt::icon("file-text")|safe }} <strong>{{ crate::web::fmt::plural_size(d.files.len(), "file") }} changed</strong></span>
     {% endif %}
   </div>
 

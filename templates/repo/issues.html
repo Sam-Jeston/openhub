@@ -1,0 +1,70 @@
+{% extends "layout_repo.html" %}
+{% block page_title %}Issues · {% endblock %}
+{% block content %}
+{% let base = r.base() %}
+<div class="page-subheader">
+  <div class="btn-group">
+    <a class="btn btn-sm{% if showing_open %} selected{% endif %}" href="{{ base }}/issues">{{ crate::web::fmt::icon("circle-dot")|safe }} {{ open_count }} Open</a>
+    <a class="btn btn-sm{% if !showing_open %} selected{% endif %}" href="{{ base }}/issues?state=closed">{{ crate::web::fmt::icon("check")|safe }} {{ closed_count }} Closed</a>
+  </div>
+  {% if ctx.user.is_some() %}<a class="btn btn-sm btn-primary" href="{{ base }}/issues/new">{{ crate::web::fmt::icon("plus")|safe }} New issue</a>{% endif %}
+</div>
+
+<div class="layout-issues">
+  <div class="issue-list-col">
+    {% if issues.is_empty() %}
+    <div class="blankslate box">
+      {{ crate::web::fmt::icon("circle-dot")|safe }}
+      <h3>{% if showing_open %}No open issues{% else %}No closed issues{% endif %}</h3>
+      {% if let Some(l) = active_label %}
+      <p>No issues with the <span class="label">{{ l }}</span> label. <a href="{{ base }}/issues">Clear the filter</a>.</p>
+      {% else %}
+      <p>Issues track ideas, bugs and tasks. Anyone who can read the repository can open one.</p>
+      {% endif %}
+      {% if showing_open && ctx.user.is_some() %}<a class="btn btn-primary" href="{{ base }}/issues/new">New issue</a>{% endif %}
+    </div>
+    {% else %}
+    <div class="box">
+      {% for issue in issues %}
+      <div class="box-row issue-row">
+        <span class="issue-icon state-color-{{ issue.state }}">{% if issue.state == "open" %}{{ crate::web::fmt::icon("circle-dot")|safe }}{% else %}{{ crate::web::fmt::icon("circle-check")|safe }}{% endif %}</span>
+        <div class="issue-main">
+          <a class="issue-title" href="{{ base }}/issues/{{ issue.number }}">{{ issue.title }}</a>
+          {% for (name, color) in issue.label_list() %}
+          <span class="label issue-label" style="--label-color: {{ color }}">{{ name }}</span>
+          {% endfor %}
+          <div class="issue-meta">
+            #{{ issue.number }}
+            {% if issue.state == "closed" %}
+            closed {% if let Some(t) = issue.closed_at %}<time title="{{ crate::web::fmt::datetime_full(t) }}">{{ crate::web::fmt::ago(t) }}</time>{% endif %}
+            {% else %}
+            opened <time title="{{ crate::web::fmt::datetime_full(issue.created_at) }}">{{ crate::web::fmt::ago(issue.created_at) }}</time> by {{ issue.author }}
+            {% endif %}
+          </div>
+        </div>
+        {% if issue.comments > 0 %}
+        <a class="issue-comments" href="{{ base }}/issues/{{ issue.number }}">{{ crate::web::fmt::icon("message-square")|safe }} {{ issue.comments }}</a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if !labels.is_empty() %}
+  <aside class="issue-sidebar">
+    <div class="sidebar-item">
+      <h3>Labels</h3>
+      <div class="label-cloud">
+        {% for l in labels %}
+        <a class="label issue-label{% if active_label.as_deref() == Some(l.name.as_str()) %} selected{% endif %}" href="{{ base }}/issues?state={% if showing_open %}open{% else %}closed{% endif %}&label={{ crate::web::fmt::urlencode(l.name) }}" style="--label-color: {{ l.color }}">{{ l.name }}{% if l.open_count > 0 %} <span class="label-count">{{ l.open_count }}</span>{% endif %}</a>
+        {% endfor %}
+      </div>
+      {% if let Some(l) = active_label %}
+      <p class="text-muted sidebar-note">Filtered by <strong>{{ l }}</strong>. <a href="{{ base }}/issues{% if !showing_open %}?state=closed{% endif %}">Clear</a></p>
+      {% endif %}
+    </div>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

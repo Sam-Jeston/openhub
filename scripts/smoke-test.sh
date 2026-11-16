@@ -122,6 +122,34 @@ git checkout -q -B main origin/main && git merge -q --no-ff cli -m "Merge cli lo
 GIT_SSH_COMMAND="$(ssh_cmd alice)" git push -q origin main 2>/dev/null
 expect_body "state-merged" "pull request merged on the command line is detected" -b "$A_COOKIES" "$BASE/alice/demo/pull/2"
 
+echo "Issues"
+expect_status 303 "alice opens an issue" -b "$A_COOKIES" -X POST \
+  -d "title=Bug+in+add&body=It+adds+wrong&labels=bug,+help+wanted" "$BASE/alice/demo/issues"
+expect_body "Bug in add" "issue appears in the list" "$BASE/alice/demo/issues"
+expect_body "It adds wrong" "issue page shows the body" "$BASE/alice/demo/issues/1"
+expect_body "help wanted" "issue shows its labels" "$BASE/alice/demo/issues/1"
+expect_body "help wanted" "labels appear in the list" "$BASE/alice/demo/issues"
+expect_body "Bug in add" "labels filter the list" "$BASE/alice/demo/issues?label=bug"
+expect_status 200 "issue numbers share the pull request space" "$BASE/alice/demo/issues/1"
+expect_status 404 "missing issue is a 404" "$BASE/alice/demo/issues/99"
+expect_status 303 "bob comments on the issue" -b "$B_COOKIES" -X POST -d "body=I+can+reproduce" "$BASE/alice/demo/issues/1/comment"
+expect_body "I can reproduce" "comment appears on the timeline" "$BASE/alice/demo/issues/1"
+expect_status 403 "bob cannot close an issue he did not open" -b "$B_COOKIES" -X POST \
+  -d "action=close&reason=completed" "$BASE/alice/demo/issues/1/state"
+expect_status 303 "alice closes the issue as completed" -b "$A_COOKIES" -X POST \
+  -d "action=close&reason=completed" "$BASE/alice/demo/issues/1/state"
+expect_body "closed this as" "closed issue shows its state" "$BASE/alice/demo/issues/1"
+expect_status 303 "alice reopens the issue" -b "$A_COOKIES" -X POST -d "action=reopen" "$BASE/alice/demo/issues/1/state"
+expect_body "reopened this" "reopened issue is open again" "$BASE/alice/demo/issues/1"
+expect_status 303 "bob opens his own issue" -b "$B_COOKIES" -X POST \
+  -d "title=Bobs+idea&body=Suggest+something" "$BASE/alice/demo/issues"
+expect_status 303 "bob closes his own issue with a comment" -b "$B_COOKIES" -X POST \
+  -d "body=Never+mind&close=1&reason=not_planned" "$BASE/alice/demo/issues/2/comment"
+expect_body "not planned" "issue closed as not planned" "$BASE/alice/demo/issues/2"
+expect_body "Bobs idea" "closed issues can be listed" "$BASE/alice/demo/issues?state=closed"
+expect_status 303 "anonymous users are sent to sign in to open an issue" -X POST -d "title=x" "$BASE/alice/demo/issues"
+expect_status 404 "anonymous users cannot see a private repo's issues" "$BASE/alice/secret/issues"
+
 echo "Permissions"
 expect_status 404 "private repo hidden from anonymous users" "$BASE/alice/secret"
 expect_status 404 "private repo hidden from non-collaborators" -b "$B_COOKIES" "$BASE/alice/secret"

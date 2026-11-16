@@ -4,7 +4,7 @@ Openhub keeps two kinds of state:
 
 | Store | Holds | Source of truth for |
 | --- | --- | --- |
-| SQLite (`<data>/openhub.db`) | Users, sessions, SSH keys, repository metadata, collaborators, pull requests, pull request events | Who exists, who may do what, and pull request state |
+| SQLite (`<data>/openhub.db`) | Users, sessions, SSH keys, repository metadata, collaborators, pull requests, pull request events, issues, issue events, labels | Who exists, who may do what, and pull request and issue state |
 | Bare repositories (`<data>/repos/<id>.git`) | Every commit, tree, blob, branch and tag, plus Openhub's `refs/pull/<n>/head` refs | All code and history |
 
 The two are linked by the repository ID and by branch names and commit SHAs stored in the database. [Invariants](#invariants) lists the rules that keep them consistent.
@@ -131,20 +131,63 @@ The conversation timeline: comments, plus records of state changes.
 
 The pull request's own description is stored in `pull_requests.body`, not as an event.
 
+### `issues`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | INTEGER PK | Internal ID, used by `issue_events` |
+| `repo_id` | INTEGER, FK, cascade | |
+| `number` | INTEGER | Shares one number space with `pull_requests.number`. `UNIQUE (repo_id, number)` |
+| `title`, `body` | TEXT | Title up to 256 characters. The body is Markdown |
+| `author_id` | INTEGER, FK | No cascade (see [Deleting rows](#deleting-rows)) |
+| `state` | TEXT | `open` or `closed` |
+| `state_reason` | TEXT, nullable | `completed` or `not_planned` once closed, NULL while open |
+| `closed_by` | INTEGER, FK, nullable | |
+| `closed_at` | INTEGER, nullable | |
+| `created_at`, `updated_at` | INTEGER | `updated_at` changes on every event and edit |
+
+### `issue_events`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | INTEGER PK | Used for `#event-<id>` anchors |
+| `issue_id` | INTEGER, FK, cascade | |
+| `author_id` | INTEGER, FK, nullable | |
+| `kind` | TEXT | `comment`, `closed`, `reopened` or `renamed` |
+| `body` | TEXT | Markdown for `comment`, the reason for `closed`, the new title for `renamed`, empty otherwise |
+| `created_at` | INTEGER | |
+
+### `labels` and `issue_labels`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `labels.id` | INTEGER PK | |
+| `labels.repo_id` | INTEGER, FK, cascade | Labels are per repository |
+| `labels.name` | TEXT | `COLLATE NOCASE`, `UNIQUE (repo_id, name)` |
+| `labels.color` | TEXT | `#rrggbb`, chosen deterministically from the name by `db::label_color` |
+| `issue_labels.issue_id`, `.label_id` | INTEGER, FK, cascade | Composite primary key |
+
+See [Issues](issues.md) for the lifecycle and how labels are assigned.
+
 ## Relationships
 
 ```
 users ─┬─< sessions               (cascade)
        ├─< ssh_keys               (cascade)
        ├─< repositories ─┬─< collaborators >─ users   (cascade both ways)
-       │                 └─< pull_requests ─< pr_events   (cascade)
+       │                 ├─< pull_requests ─< pr_events   (cascade)
+       │                 ├─< issues ─< issue_events       (cascade)
+       │                 ├─< issues ─< issue_labels >─ labels (cascade)
+       │                 └─< labels                        (cascade)
        ├─< pull_requests.author_id, .merged_by          (no cascade)
-       └─< pr_events.author_id                          (no cascade)
+       ├─< pr_events.author_id                          (no cascade)
+       ├─< issues.author_id, .closed_by                 (no cascade)
+       └─< issue_events.author_id                       (no cascade)
 ```
 
 ### Deleting rows
 
-- **Deleting a repository** (`db::delete_repo`) cascades to its collaborators, pull requests and events. The handler then removes `repos/<id>.git`. If that fails, it logs a warning and the directory is left behind.
+- **Deleting a repository** (`db::delete_repo`) cascades to its collaborators, pull requests and events, and its issues, issue events and labels. The handler then removes `repos/<id>.git`. If that fails, it logs a warning and the directory is left behind.
 - **Deleting a user** isn't supported in the interface. Because foreign keys are enforced, `DELETE FROM users` fails for anyone who authored a pull request or event, or merged a pull request, in a repository they don't own. A future "delete user" feature must reassign or nullify those references first. For pull requests, `author_id` is `NOT NULL`, so that needs a placeholder user or a migration.
 
 ## Repositories on disk

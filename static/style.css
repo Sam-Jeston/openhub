@@ -421,6 +421,17 @@ select.input { width: auto; padding-right: 28px; }
 .issue-meta { margin-top: 4px; font-size: 12px; color: var(--text-muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .issue-comments { display: inline-flex; align-items: center; gap: 4px; color: var(--text-muted); font-size: 12px; }
 .branch-pair { display: inline-flex; align-items: center; gap: 4px; }
+.layout-issues { display: grid; grid-template-columns: minmax(0, 1fr) 256px; gap: 32px; }
+.issue-list-col { min-width: 0; }
+.issue-label { --label-color: var(--border); color: var(--text); border-color: var(--label-color); box-shadow: inset 3px 0 0 var(--label-color); }
+.issue-label:hover { background: var(--bg-muted); text-decoration: none; }
+.issue-label.selected { background: var(--bg-muted); font-weight: 600; }
+.issue-label .label-count { margin-left: 4px; color: var(--text-muted); }
+.label-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
+.sidebar-note { margin: 10px 0 0; font-size: 12px; }
+.issue-new-title { margin-bottom: 16px; }
+.issue-form-body { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
+.issue-state-form { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .state-color-open { color: var(--success); }
 .state-color-closed { color: var(--danger); }
 .state-color-merged { color: var(--merged); }
@@ -738,6 +749,8 @@ select.input { width: auto; padding-right: 28px; }
 .badge-closed { background: var(--danger-emphasis); color: #fff; }
 .badge-open { background: var(--success-emphasis); color: #fff; }
 
+.issue-sidebar .sidebar-item { margin-bottom: 24px; }
+.issue-sidebar h3 { font-size: 13px; margin-bottom: 8px; }
 .merge-section { padding-top: 4px; }
 .merge-avatar {
   width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius);
@@ -829,7 +842,7 @@ select.input { width: auto; padding-right: 28px; }
   .site-header-inner { gap: 12px; }
   .hide-sm { display: none; }
   .header-button { padding: 5px 8px; }
-  .layout-dashboard, .layout-profile, .layout-settings { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .layout-dashboard, .layout-profile, .layout-settings, .layout-issues { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .profile-card { display: grid; grid-template-columns: 72px 1fr; gap: 0 16px; align-items: center; }
   .profile-card .avatar { width: 72px !important; height: 72px !important; font-size: 32px !important; margin: 0; grid-row: span 2; }
   .profile-card .profile-bio, .profile-card .btn-block, .profile-card .profile-meta { grid-column: 1 / -1; }

@@ -21,6 +21,7 @@ pub struct RepoCtx {
     pub access: Access,
     pub path: PathBuf,
     pub open_pulls: i64,
+    pub open_issues: i64,
     pub ssh_url: String,
     pub http_url: String,
 }
@@ -71,6 +72,7 @@ pub async fn load_repo(
         return Err(AppError::NotFound);
     }
     let (open_pulls, _) = db::count_pulls(&state.db, repo.id).await?;
+    let (open_issues, _) = db::count_issues(&state.db, repo.id).await?;
     Ok(RepoCtx {
         path: state.config.repo_path(repo.id),
         ssh_url: state.config.ssh_clone_url(&repo.owner, &repo.name),
@@ -78,6 +80,7 @@ pub async fn load_repo(
         repo,
         access,
         open_pulls,
+        open_issues,
     })
 }
 

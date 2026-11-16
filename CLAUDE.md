@@ -2,7 +2,7 @@
 
 A minimal, self-hostable GitHub-style git server: push over SSH, browse code and history, and review pull requests. It is a single Rust binary backed by SQLite. User-facing documentation lives in `README.md`. How the system works (architecture, data model, access control, git transport, pull requests, web interface, security, operations) is documented in `docs/`, indexed at `docs/README.md`. This file covers working on the code.
 
-**Scope is deliberate.** Openhub is git hosting only. Do not add issues, CI, wikis, releases, forks or organisations unless asked. Pushing is SSH-only by design (HTTP is read-only), so don't add HTTP push without discussing it first.
+**Scope is deliberate.** Openhub is git hosting with a basic issue tracker. Do not add CI, wikis, releases, forks or organisations unless asked, and keep issues simple (no milestones, assignees or cross-references) unless asked. Pushing is SSH-only by design (HTTP is read-only), so don't add HTTP push without discussing it first.
 
 > The parent directory's `CLAUDE.md` is about Bun and JavaScript projects. Openhub has no JavaScript toolchain: `static/app.js` is hand-written and served as-is. That guidance only applies if a JS build step is ever introduced.
 
@@ -50,7 +50,7 @@ scripts/deploy-server.sh user@host       # build on a Linux host over ssh and in
 | `src/web/ctx.rs` | Per-request middleware: session user, flash, Origin check, error pages, security headers |
 | `src/web/error.rs` | `AppError` and how it becomes a response |
 | `src/web/fmt.rs` | Helpers called from templates (`ago`, `date`, `plural`, `avatar`, `icon`, `urlpath`, …) |
-| `src/web/{account,home,repo,code,pulls}.rs` | Page handlers |
+| `src/web/{account,home,repo,code,pulls,issues}.rs` | Page handlers |
 | `src/web/git_http.rs` | Smart HTTP (clone/fetch only) |
 | `templates/` | askama templates. See `templates/CLAUDE.md` |
 | `static/` | `style.css`, `app.js`, `favicon.svg`. Compiled into the binary with `include_str!` |
@@ -87,6 +87,13 @@ Handlers take `Ctx` as an extractor and return `WebResult` (`Result<Response, Ap
 - `sync::refresh_pulls` runs after every push and on every open-PR page view. It tracks new heads and marks PRs as merged when their head is already contained in the base (for example, merged on the command line).
 - The `pr_events` table is the conversation timeline. `author_id` is NULL for events Openhub detected itself.
 - Web merges (`git::merge`) are done in memory and update the base branch with a compare-and-swap (`reference_matching`), so a concurrent push makes the merge fail cleanly.
+
+**Issues.**
+- State is `open` or `closed`; `state_reason` records `completed` or `not_planned`.
+- Issues and pull requests share one per-repository number space (`db::create_issue` takes the max over both tables).
+- The `issue_events` table is the conversation timeline (`comment`, `closed`, `reopened`, `renamed`).
+- Labels are per repository (`labels`, `issue_labels`) and created on demand by `db::ensure_label`.
+- Author or write access may close, reopen and edit; any signed-in reader may comment. See `docs/issues.md`.
 
 **After a push** (SSH `receive-pack` exits 0): `sync::after_push` updates `pushed_at`, points HEAD at an existing branch (and updates `default_branch` if it had to change), then refreshes PRs. `ssh.rs` then prints the "Create a pull request" / "View pull request" hints.
 

@@ -1,6 +1,6 @@
 {# Expects `diff` (DiffSummary), `file_ref` (commit to link files at) and `base` (repo URL). #}
 <div class="diff-toolbar">
-  <span>Showing <strong>{{ crate::web::fmt::plural(diff.files.len(), "changed file") }}</strong> with <strong class="text-success">{{ crate::web::fmt::plural(diff.additions, "addition") }}</strong> and <strong class="text-danger">{{ crate::web::fmt::plural(diff.deletions, "deletion") }}</strong>.</span>
+  <span>Showing <strong>{{ crate::web::fmt::plural_size(diff.files.len(), "changed file") }}</strong> with <strong class="text-success">{{ crate::web::fmt::plural_size(diff.additions, "addition") }}</strong> and <strong class="text-danger">{{ crate::web::fmt::plural_size(diff.deletions, "deletion") }}</strong>.</span>
   {% if diff.files.len() > 1 %}
   <details class="dropdown dropdown-right">
     <summary class="btn btn-sm">{{ crate::web::fmt::icon("file")|safe }} Jump to file {{ crate::web::fmt::icon("chevron-down")|safe }}</summary>
