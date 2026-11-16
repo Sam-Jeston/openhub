@@ -717,6 +717,8 @@ select.input { width: auto; padding-right: 28px; }
 }
 .state-open { background: var(--success-emphasis); }
 .state-closed { background: var(--danger-emphasis); }
+.state-resolved { background: var(--success-emphasis); }
+.state-not-planned { background: var(--text-muted); }
 .state-merged { background: var(--merged); }
 
 .layout-pull { display: grid; grid-template-columns: minmax(0, 1fr) 256px; gap: 32px; }
@@ -759,6 +761,8 @@ select.input { width: auto; padding-right: 28px; }
 .merge-avatar.state-open { background: var(--success-emphasis); }
 .merge-avatar.state-merged { background: var(--merged); }
 .merge-avatar.state-closed { background: var(--danger-emphasis); }
+.state-resolved { background: var(--success-emphasis); }
+.state-not-planned { background: var(--text-muted); }
 .merge-avatar .icon { width: 20px; height: 20px; }
 .merge-box { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; background: var(--bg); }
 .merge-box-ready { border-color: var(--success-emphasis); }

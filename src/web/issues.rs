@@ -129,7 +129,7 @@ pub async fn list(
 // ---------------------------------------------------------------------------
 
 #[derive(Template)]
-#[template(path = "repo/new_issue.html")]
+#[template(path = "repo/issue_new.html")]
 struct NewIssuePage {
     ctx: Ctx,
     r: RepoCtx,
@@ -196,7 +196,7 @@ pub async fn create(
     if !names.is_empty() {
         set_labels(&state, r.repo.id, issue.id, &names).await?;
     }
-    Ok(redirect(&format!("{}/issues/{number}", r.base())))
+    Ok(redirect(&format!("{}/issue/{number}", r.base())))
 }
 
 // ---------------------------------------------------------------------------
@@ -212,26 +212,33 @@ pub struct IssueView {
     pub author: String,
     pub body: String,
     pub state: String,
-    pub state_reason: Option<String>,
     pub closed_by: Option<String>,
     pub closed_at: Option<i64>,
     pub created_at: i64,
     pub comments: i64,
+    /// Short label for the close reason: "resolved" or "not planned".
+    pub close_label: String,
 }
 
 impl From<&Issue> for IssueView {
     fn from(i: &Issue) -> Self {
+        let close_label = if i.is_not_planned() {
+            "not planned"
+        } else {
+            "resolved"
+        }
+        .to_string();
         IssueView {
             title: i.title.clone(),
             number: i.number,
             author: i.author.clone(),
             body: i.body.clone(),
             state: i.state.clone(),
-            state_reason: i.state_reason.clone(),
             closed_by: i.closed_by.clone(),
             closed_at: i.closed_at,
             created_at: i.created_at,
             comments: i.comments,
+            close_label,
         }
     }
 }
@@ -329,7 +336,7 @@ pub async fn comment(
     let issue = db::issue_by_number(&state.db, r.repo.id, number)
         .await?
         .ok_or(AppError::NotFound)?;
-    let url = format!("{}/issues/{number}", r.base());
+    let url = format!("{}/issue/{number}", r.base());
     let body = f.body.trim();
     if !body.is_empty() {
         db::add_issue_event(&state.db, issue.id, Some(user.id), "comment", body).await?;
@@ -384,7 +391,7 @@ pub async fn set_state(
     let issue = db::issue_by_number(&state.db, r.repo.id, number)
         .await?
         .ok_or(AppError::NotFound)?;
-    let url = format!("{}/issues/{number}", r.base());
+    let url = format!("{}/issue/{number}", r.base());
     if !can_manage(&r, &issue, user.id) {
         return Err(AppError::Forbidden(
             "Only the author or a collaborator can change this issue.".into(),
@@ -431,7 +438,7 @@ pub async fn edit(
     let title = f.title.trim().chars().take(256).collect::<String>();
     if title.is_empty() {
         return Ok(redirect_flash(
-            &format!("{}/issues/{number}", r.base()),
+            &format!("{}/issue/{number}", r.base()),
             "error",
             "An issue needs a title.",
         ));
@@ -442,7 +449,7 @@ pub async fn edit(
         db::add_issue_event(&state.db, issue.id, Some(user.id), "renamed", &title).await?;
     }
     set_labels(&state, r.repo.id, issue.id, &parse_labels(&f.labels)).await?;
-    Ok(redirect(&format!("{}/issues/{number}", r.base())))
+    Ok(redirect(&format!("{}/issue/{number}", r.base())))
 }
 
 #[cfg(test)]

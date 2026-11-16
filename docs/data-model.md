@@ -141,7 +141,7 @@ The pull request's own description is stored in `pull_requests.body`, not as an 
 | `title`, `body` | TEXT | Title up to 256 characters. The body is Markdown |
 | `author_id` | INTEGER, FK | No cascade (see [Deleting rows](#deleting-rows)) |
 | `state` | TEXT | `open` or `closed` |
-| `state_reason` | TEXT, nullable | `completed` or `not_planned` once closed, NULL while open |
+| `close_reason` | TEXT, nullable | `completed` (resolved) or `not_planned` once closed, NULL while open |
 | `closed_by` | INTEGER, FK, nullable | |
 | `closed_at` | INTEGER, nullable | |
 | `created_at`, `updated_at` | INTEGER | `updated_at` changes on every event and edit |

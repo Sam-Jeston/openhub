@@ -61,10 +61,10 @@ All routes are defined in `web::router`. "Read", "write" and "admin" refer to th
 | POST | `/{owner}/{repo}/pull/{n}/edit` | `pulls::edit` | Author or write |
 | POST | `/{owner}/{repo}/pull/{n}/merge` | `pulls::merge` | Write |
 | GET, POST | `/{owner}/{repo}/issues` and `/issues/new` | `issues::list`, `issues::create`, `issues::new_form` | Read; creating needs a user. `?state=closed` and `?label=…` filter |
-| GET | `/{owner}/{repo}/issues/{n}` | `issues::show` | Read |
-| POST | `/{owner}/{repo}/issues/{n}/comment` | `issues::comment` | User plus read. `close=1` closes with the comment |
-| POST | `/{owner}/{repo}/issues/{n}/state` | `issues::set_state` | Author or write |
-| POST | `/{owner}/{repo}/issues/{n}/edit` | `issues::edit` | Author or write |
+| GET | `/{owner}/{repo}/issue/{n}` | `issues::show` | Read |
+| POST | `/{owner}/{repo}/issue/{n}/comment` | `issues::comment` | User plus read. `close=1` closes with the comment |
+| POST | `/{owner}/{repo}/issue/{n}/state` | `issues::set_state` | Author or write |
+| POST | `/{owner}/{repo}/issue/{n}/edit` | `issues::edit` | Author or write |
 | GET, POST | `/{owner}/{repo}/settings` | `repo::settings`, `repo::update_settings` | Admin |
 | POST | `/{owner}/{repo}/settings/collaborators` and `/collaborators/remove` | `repo::add_collaborator`, `repo::remove_collaborator` | Admin |
 | POST | `/{owner}/{repo}/settings/delete` | `repo::delete` | Admin |

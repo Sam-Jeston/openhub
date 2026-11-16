@@ -86,16 +86,16 @@ pub fn router(state: AppState) -> Router {
             get(issues::list).post(issues::create),
         )
         .route("/{owner}/{repo}/issues/new", get(issues::new_form))
-        .route("/{owner}/{repo}/issues/{number}", get(issues::show))
+        .route("/{owner}/{repo}/issue/{number}", get(issues::show))
         .route(
-            "/{owner}/{repo}/issues/{number}/comment",
+            "/{owner}/{repo}/issue/{number}/comment",
             post(issues::comment),
         )
         .route(
-            "/{owner}/{repo}/issues/{number}/state",
+            "/{owner}/{repo}/issue/{number}/state",
             post(issues::set_state),
         )
-        .route("/{owner}/{repo}/issues/{number}/edit", post(issues::edit))
+        .route("/{owner}/{repo}/issue/{number}/edit", post(issues::edit))
         .route(
             "/{owner}/{repo}/settings",
             get(repo::settings).post(repo::update_settings),

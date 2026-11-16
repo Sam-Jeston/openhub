@@ -9,8 +9,8 @@ CREATE TABLE issues (
     author_id     INTEGER NOT NULL REFERENCES users(id),
     -- 'open' | 'closed'
     state         TEXT    NOT NULL DEFAULT 'open',
-    -- 'completed' | 'not_planned' once closed, NULL otherwise
-    state_reason  TEXT,
+    -- 'completed' (resolved) | 'not_planned' once closed, NULL otherwise
+    close_reason  TEXT,
     closed_by     INTEGER REFERENCES users(id),
     closed_at     INTEGER,
     created_at    INTEGER NOT NULL,

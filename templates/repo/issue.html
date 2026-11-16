@@ -3,7 +3,7 @@
 {% block content %}
 {% let base = r.base() %}
 {% let view = view.clone() %}
-{% let iurl = format!("{}/issues/{}", base, view.number) %}
+{% let iurl = r.issue_url(&view.number) %}
 <div class="pull-header">
   <div class="pull-title-row">
     <h1 class="pull-title">{{ view.title }} <span class="text-muted">#{{ view.number }}</span></h1>
@@ -14,8 +14,12 @@
     <span class="state state-open">{{ crate::web::fmt::icon("circle-dot")|safe }} Open</span>
     <span><strong>{{ view.author }}</strong> opened this issue <time title="{{ crate::web::fmt::datetime_full(view.created_at) }}">{{ crate::web::fmt::ago(view.created_at) }}</time> · {{ crate::web::fmt::plural(view.comments, "comment") }}</span>
     {% else %}
-    <span class="state state-closed">{{ crate::web::fmt::icon("circle-check")|safe }} Closed</span>
-    <span><strong>{{ view.closed_by.clone().unwrap_or(view.author.clone()) }}</strong> closed this as <strong>{% if let Some(r) = view.state_reason %}{% if r == "not_planned" %}not planned{% else %}completed{% endif %}{% else %}completed{% endif %}</strong>{% if let Some(t) = view.closed_at %} <time title="{{ crate::web::fmt::datetime_full(t) }}">{{ crate::web::fmt::ago(t) }}</time>{% endif %}</span>
+    {% if view.close_label == "not planned" %}
+    <span class="state state-not-planned">{{ crate::web::fmt::icon("circle-slash")|safe }} Not planned</span>
+    {% else %}
+    <span class="state state-resolved">{{ crate::web::fmt::icon("circle-check")|safe }} Resolved</span>
+    {% endif %}
+    <span><strong>{{ view.closed_by.clone().unwrap_or(view.author.clone()) }}</strong> closed this as <strong>{{ view.close_label }}</strong>{% if let Some(t) = view.closed_at %} <time title="{{ crate::web::fmt::datetime_full(t) }}">{{ crate::web::fmt::ago(t) }}</time>{% endif %}</span>
     {% endif %}
   </div>
   {% if can_manage %}
@@ -63,7 +67,7 @@
     <div class="timeline-event">
       {% if e.kind == "closed" %}
       <span class="event-badge badge-closed">{{ crate::web::fmt::icon("circle-check")|safe }}</span>
-      <span><strong>{{ e.author }}</strong> closed this as <strong>{% if e.body == "not_planned" %}not planned{% else %}completed{% endif %}</strong>
+      <span><strong>{{ e.author }}</strong> closed this as <strong>{% if e.body == "not_planned" %}not planned{% else %}resolved{% endif %}</strong>
       {% else if e.kind == "reopened" %}
       <span class="event-badge badge-open">{{ crate::web::fmt::icon("circle-dot")|safe }}</span>
       <span><strong>{{ e.author }}</strong> reopened this
@@ -119,11 +123,8 @@
       {% if view.state == "open" %}
       <form class="issue-state-form" method="post" action="{{ iurl }}/state">
         <input type="hidden" name="action" value="close">
-        <select class="input input-sm" name="reason" aria-label="Close reason">
-          <option value="completed">Close as completed</option>
-          <option value="not_planned">Close as not planned</option>
-        </select>
-        <button class="btn btn-sm btn-danger" type="submit">Close issue</button>
+        <button class="btn btn-sm btn-success" type="submit" name="reason" value="completed" data-confirm="Close this issue as resolved?">{{ crate::web::fmt::icon("circle-check")|safe }} Close as resolved</button>
+        <button class="btn btn-sm" type="submit" name="reason" value="not_planned" data-confirm="Close this issue as not planned?">{{ crate::web::fmt::icon("circle-slash")|safe }} Close as not planned</button>
       </form>
       {% else %}
       <form method="post" action="{{ iurl }}/state">

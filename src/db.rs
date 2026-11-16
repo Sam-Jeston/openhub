@@ -783,8 +783,8 @@ pub struct Issue {
     pub author: String,
     /// `open` or `closed`.
     pub state: String,
-    /// `completed` or `not_planned` once closed.
-    pub state_reason: Option<String>,
+    /// `completed` (resolved) or `not_planned` once closed.
+    pub close_reason: Option<String>,
     pub closed_by: Option<String>,
     pub closed_at: Option<i64>,
     pub created_at: i64,
@@ -797,6 +797,11 @@ pub struct Issue {
 impl Issue {
     pub fn is_open(&self) -> bool {
         self.state == "open"
+    }
+
+    /// True when the issue was closed as `not_planned`.
+    pub fn is_not_planned(&self) -> bool {
+        self.state == "closed" && self.close_reason.as_deref() == Some("not_planned")
     }
 
     /// Labels as `(name, colour)` pairs. `labels` is a `\x1f`-separated list of
@@ -813,7 +818,7 @@ impl Issue {
 }
 
 const ISSUE_SELECT: &str = "SELECT i.id, i.repo_id, i.number, i.title, i.body, i.author_id, \
-     a.username AS author, i.state, i.state_reason, c.username AS closed_by, i.closed_at, \
+     a.username AS author, i.state, i.close_reason, c.username AS closed_by, i.closed_at, \
      i.created_at, i.updated_at, \
      (SELECT COUNT(*) FROM issue_events e WHERE e.issue_id = i.id AND e.kind = 'comment') AS comments, \
      COALESCE((SELECT group_concat(l.name || '=' || l.color, char(31)) \
@@ -915,7 +920,7 @@ pub async fn update_issue_text(db: &Db, id: i64, title: &str, body: &str) -> Res
 pub async fn close_issue(db: &Db, id: i64, user_id: i64, reason: Option<&str>) -> Result<()> {
     let now = now();
     sqlx::query(
-        "UPDATE issues SET state = 'closed', state_reason = ?, closed_by = ?, closed_at = ?, \
+        "UPDATE issues SET state = 'closed', close_reason = ?, closed_by = ?, closed_at = ?, \
          updated_at = ? WHERE id = ?",
     )
     .bind(reason)
@@ -930,7 +935,7 @@ pub async fn close_issue(db: &Db, id: i64, user_id: i64, reason: Option<&str>) -
 
 pub async fn reopen_issue(db: &Db, id: i64) -> Result<()> {
     sqlx::query(
-        "UPDATE issues SET state = 'open', state_reason = NULL, closed_by = NULL, \
+        "UPDATE issues SET state = 'open', close_reason = NULL, closed_by = NULL, \
          closed_at = NULL, updated_at = ? WHERE id = ?",
     )
     .bind(now())
@@ -1087,7 +1092,7 @@ mod tests {
             author_id: 1,
             author: "alice".into(),
             state: "open".into(),
-            state_reason: None,
+            close_reason: None,
             closed_by: None,
             closed_at: None,
             created_at: 0,
@@ -1112,7 +1117,7 @@ mod tests {
             author_id: 1,
             author: "alice".into(),
             state: "open".into(),
-            state_reason: None,
+            close_reason: None,
             closed_by: None,
             closed_at: None,
             created_at: 0,

@@ -36,6 +36,10 @@ impl RepoCtx {
         format!("{}/pull/{number}", self.base())
     }
 
+    pub fn issue_url(&self, number: &i64) -> String {
+        format!("{}/issue/{number}", self.base())
+    }
+
     pub fn require_write(&self) -> Result<(), AppError> {
         if self.access.write {
             Ok(())
