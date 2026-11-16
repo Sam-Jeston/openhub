@@ -774,6 +774,7 @@ pub async fn list_events(db: &Db, pr_id: i64) -> Result<Vec<PrEvent>> {
 #[derive(Debug, Clone, FromRow)]
 pub struct Issue {
     pub id: i64,
+    // Selected by ISSUE_SELECT so FromRow maps it; not read by the current UI.
     #[allow(dead_code)]
     pub repo_id: i64,
     pub number: i64,
@@ -788,6 +789,7 @@ pub struct Issue {
     pub closed_by: Option<String>,
     pub closed_at: Option<i64>,
     pub created_at: i64,
+    // Selected by ISSUE_SELECT so FromRow maps it; not read by the current UI.
     #[allow(dead_code)]
     pub updated_at: i64,
     pub comments: i64,
@@ -994,6 +996,7 @@ pub async fn list_issue_events(db: &Db, issue_id: i64) -> Result<Vec<IssueEvent>
 
 #[derive(Debug, Clone, FromRow)]
 pub struct Label {
+    // Selected by list_labels for completeness; the UI keys on name.
     #[allow(dead_code)]
     pub id: i64,
     pub name: String,

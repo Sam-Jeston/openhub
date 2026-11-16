@@ -368,7 +368,7 @@ async fn close_issue_row(
         issue.id,
         Some(user_id),
         "closed",
-        reason.unwrap_or(""),
+        reason.unwrap_or_default(),
     )
     .await?;
     Ok(())
