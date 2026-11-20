@@ -1,6 +1,6 @@
 # Openhub
 
-Openhub is a minimal, self-hostable git server with a familiar web interface. Push over SSH, browse code and history, and review changes with pull requests. That is the whole product: no issue tracker, no CI, no wiki.
+Openhub is a minimal, self-hostable git server with a familiar web interface. Push over SSH, browse code and history, and discuss and merge changes with pull requests. That is the whole product: no CI, no wiki, no forks.
 
 It ships as a single Rust binary with SQLite for storage, so a whole installation is one executable plus one data directory.
 
@@ -9,11 +9,11 @@ It ships as a single Rust binary with SQLite for storage, so a whole installatio
 ## Features
 
 - **Git over SSH**: a built-in SSH server authenticates `git push` and `git fetch` with the public keys users add in their settings. No system `sshd` configuration is needed.
-- **Read-only git over HTTP**: anonymous clones of public repositories, and password-authenticated clones of private ones.
+- **Read-only git over HTTP**: anonymous clones and fetches of public repositories, and password-authenticated ones of private repositories. Pushing is SSH-only.
 - **Code browsing**: file trees with the latest commit for each entry, syntax-highlighted files with linkable line numbers, rendered Markdown READMEs, raw files, and ZIP/tar.gz downloads.
-- **History**: paginated commit logs (per branch, tag or path), commit pages with diffs, branches with ahead/behind counts, and tags.
-- **Pull requests**: compare branches, open a pull request, discuss it in Markdown comments, and review the commits and the diff. Merge with a merge commit, a squash or a rebase, then delete the branch. Pull requests merged with a plain `git push` are detected automatically.
-- **Accounts and access**: public and private repositories, plus collaborators with write access. The first account created is the site administrator.
+- **History**: paginated commit logs (per branch, tag or path), commit pages with diffs, a branch list with ahead/behind counts against the default branch, and a tag list.
+- **Pull requests**: compare branches, open a pull request, discuss it in Markdown comments, and review the commits and the diff. Merge with a merge commit, a squash or a rebase, then delete the branch. Pull requests merged with a plain `git push` are detected automatically, and a pull request can be closed without merging and reopened later.
+- **Accounts and access**: public and private repositories, plus collaborators with write access. Each repository names its owner, may carry a short description and a default branch, and can be renamed or deleted from its settings. The first account created is the site administrator.
 - **Comfortable to use**: light and dark themes, works on phone-sized screens, and needs no JavaScript for core features.
 
 <table>
@@ -42,7 +42,7 @@ cargo build --release
 ./target/release/openhub --public-url http://localhost:3000
 ```
 
-By default the web interface listens on port `3000` and the SSH server on port `2222`. Everything is stored in `./data`.
+By default the web interface listens on port `3000` and the SSH server on port `2222`. Everything is stored in `./data`. During development, `cargo run -- --data-dir ./data` starts the same server without a release build.
 
 ### On a Linux server with systemd
 
@@ -100,7 +100,7 @@ Logging is controlled with `RUST_LOG`, for example `RUST_LOG=openhub=debug`.
 - **Public URL must match**: form submissions are only accepted from the origin in `OPENHUB_PUBLIC_URL`, or from one matching the request's `Host` header. If sign-in or other forms fail with "Cross-origin request rejected", check that the public URL matches exactly what appears in the browser's address bar, including scheme and port.
 - **Using port 22 for SSH**: forward port 22 to Openhub's SSH port (for example `"22:2222"` in Docker) and set `OPENHUB_SSH_PORT=22`. Clone URLs then take the short form `git@git.example.com:alice/project.git`. If the host already runs its own `sshd` on port 22, keep Openhub on another port.
 - **Host key**: the SSH host key is created on first start at `<data-dir>/ssh_host_ed25519_key`. Keep it with your backups so clients don't get host-key warnings after a restore.
-- **Backups**: back up the whole data directory. To copy the database while the server is running, use `sqlite3 openhub.db ".backup backup.db"`; otherwise stop the server first.
+- **Backups**: back up the whole data directory. To copy the database while the server is running, use `sqlite3 <data-dir>/openhub.db ".backup backup.db"`; otherwise stop the server first.
 - **Registration**: once everyone has an account, set `OPENHUB_DISABLE_REGISTRATION=true`.
 
 ## How it works
@@ -128,7 +128,7 @@ git (SSH)   ──▶  SSH server (russh)      ──┘
 | `src/git.rs` | Repository access: refs, trees, history, diffs, merging |
 | `src/sync.rs` | Post-push bookkeeping for HEAD and pull requests |
 | `src/db.rs`, `migrations/` | SQLite schema and queries |
-| `src/web/` | HTTP handlers: accounts, code browsing, pull requests, smart HTTP |
+| `src/web/` | HTTP handlers: accounts, code browsing, pull requests, smart HTTP, per-request middleware |
 | `src/highlight.rs`, `src/markdown.rs` | Syntax highlighting and sanitised Markdown |
 | `templates/`, `static/` | HTML templates, stylesheet and script (compiled into the binary) |
 
@@ -148,11 +148,12 @@ Openhub doesn't yet rate-limit sign-in attempts. If the server is exposed to the
 ```sh
 cargo test                  # unit tests
 cargo clippy --all-targets  # lints (kept warning-free)
+cargo fmt                   # formatting
 scripts/smoke-test.sh       # end-to-end: push, browse, pull requests, merges, permissions
 cargo run -- --data-dir ./data
 ```
 
-The smoke test starts a throwaway instance on ports 38080 and 38022 (override with `HTTP_PORT` and `SSH_PORT`) and drives it with `curl`, `ssh`, `ssh-keygen` and `git`.
+The smoke test starts a throwaway instance on ports 38080 and 38022 (override with `HTTP_PORT` and `SSH_PORT`), builds it with `cargo build` if no binary is given, and drives it with `curl`, `ssh`, `ssh-keygen` and `git`.
 
 How the system works, including the architecture, data model, permissions, git transport, pull request tracking, security model and operations, is documented in [`docs/`](docs/README.md). Coding conventions and known pitfalls for contributors are in [`CLAUDE.md`](CLAUDE.md), with template-specific notes in [`templates/CLAUDE.md`](templates/CLAUDE.md).
 
